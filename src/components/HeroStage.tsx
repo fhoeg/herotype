@@ -7,6 +7,9 @@ import type { HeroState } from '../lib/types'
 
 gsap.registerPlugin(useGSAP)
 
+/** Map text alignment to the flex cross-axis alignment of the .hero column. */
+const ALIGN_ITEMS = { left: 'flex-start', center: 'center', right: 'flex-end' } as const
+
 type Props = {
   state: HeroState
   /** Bumping this forces a replay without any other state change. */
@@ -105,7 +108,11 @@ function SpansStage({ state, runId }: Props) {
       <div
         className="hero"
         ref={scope}
-        style={{ transform: `scale(${state.scale})` }}
+        style={{
+          transform: `scale(${state.scale})`,
+          alignItems: ALIGN_ITEMS[state.align],
+          textAlign: state.align,
+        }}
       >
         <h1
           data-testid="headline"
@@ -271,7 +278,11 @@ function DrawStage({ state, runId }: Props) {
       <div
         className="hero"
         ref={scope}
-        style={{ transform: `scale(${state.scale})` }}
+        style={{
+          transform: `scale(${state.scale})`,
+          alignItems: ALIGN_ITEMS[state.align],
+          textAlign: state.align,
+        }}
       >
         {glyphs && glyphs.ds.length > 0 && (
           <svg

@@ -363,3 +363,28 @@ test('D1–D6 — Draw renders SVG outlines, follows the font, toggles fill, the
 
   expect(errors).toEqual([])
 })
+
+// ---------------------------------------------------------------------------
+// Sub line (editable tagline) + text alignment
+// ---------------------------------------------------------------------------
+test('Sub line is editable and alignment switches left/center/right', async ({ page, errors }) => {
+  await gotoApp(page)
+
+  // Sub line: default value + live edit reflects in the rendered tagline
+  const tagInput = page.getByTestId('tagline-input')
+  await expect(tagInput).toHaveValue('vibe code festival 2026')
+  await tagInput.fill('shipped at 3am')
+  await expect(page.getByTestId('tagline')).toHaveText('shipped at 3am')
+
+  // Alignment: default centre, then left, then right — .hero inline style follows
+  await expect(page.locator('.hero')).toHaveAttribute('style', /text-align:\s*center/)
+
+  await page.getByTestId('align').locator('[data-align="left"]').click()
+  await expect(page.getByTestId('align').locator('[data-align="left"]')).toHaveClass(/active/)
+  await expect(page.locator('.hero')).toHaveAttribute('style', /text-align:\s*left/)
+
+  await page.getByTestId('align').locator('[data-align="right"]').click()
+  await expect(page.locator('.hero')).toHaveAttribute('style', /text-align:\s*right/)
+
+  expect(errors).toEqual([])
+})
