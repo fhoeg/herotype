@@ -89,14 +89,18 @@ the cut-list — drop it entirely if behind, the core loop + 6 presets are untou
   stroke=`--c1`, 0 console errors, screenshot reads clean. Committing (demoable).
 
 ### Slice 2 — Follow the picked font (full D2)
-- [ ] DR8. `src/lib/fontFiles.ts` (new): `fontFileUrl(family)` → jsDelivr `@fontsource`
-  `.woff` URL (kebab id, `latin`, wght 400) + `FONT_FILE_OVERRIDES` map + bundled
-  fallback constant. — `src/lib/fontFiles.ts`
-- [ ] DR9. `HeroStage` resolves family from `state.font || def.font`, fetches via
-  `fontFileUrl`, falls back to bundled `anton.ttf` on fetch/parse error (never
-  blanks). Re-renders on `[preset, font, headline]`. — `src/components/HeroStage.tsx`
-- [ ] DR10. **Checkpoint:** picking a Google Font with Draw active redraws in that
-  face; a parse failure silently falls back. `npm run build` green; commit.
+- [x] DR8. `src/lib/fontFiles.ts`: `fontFileUrl(family)` → jsDelivr `@fontsource`
+  `.woff` (kebab id, latin, wght 400) + `familyName()` (strips CSS quotes) +
+  `FONT_FILE_OVERRIDES` (empty — all 16 verified to follow the pattern) +
+  `BUNDLED_FALLBACK`. — `src/lib/fontFiles.ts`
+- [x] DR9. `DrawStage` resolves `state.font || familyName(def.font)`, fetches via
+  `fontFileUrl`, falls back to bundled Anton on fetch/parse failure. — `src/components/HeroStage.tsx`
+- [x] DR10. **Checkpoint PASSED.** Picking Pacifico/Montserrat/Oswald/Playfair with
+  Draw active redraws in that face, 0 NaN, 0 console errors. `npm run build` +
+  `npm run validate` 9/9 green. Committed `ad5cd1d`.
+  - ⚠️ **Gotcha found & fixed:** `opentype.js` **2.0.0** emits `NaN` path coords for
+    curved glyphs (Pacifico 11/11, Montserrat 8/11) and can't parse Oswald/Inter.
+    **Pinned to 1.3.4** (0 NaN everywhere). DO NOT bump to 2.x.
 
 ### Slice 3 — Fill/outline toggle UI (full D4)
 - [ ] DR11. Fill/outline toggle (`data-testid="draw-fill"`) in `ControlPanel`,
