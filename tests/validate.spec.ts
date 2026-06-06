@@ -303,3 +303,63 @@ test('C1–C6 — colors are selectable, seed from palettes, go custom, and expo
 
   expect(errors).toEqual([])
 })
+
+// ---------------------------------------------------------------------------
+// D1–D6 — Draw effect (self-drawing glyph outlines)
+// ---------------------------------------------------------------------------
+const drawPaths = (page: Page) => page.locator('svg.draw-svg path.glyph')
+
+test('D1–D6 — Draw renders SVG outlines, follows the font, toggles fill, themes by palette', async ({
+  page,
+  errors,
+}) => {
+  await gotoApp(page)
+
+  // D1 — selecting Draw renders an SVG outline layer (not the .u spans)
+  await page.locator('.preset[data-preset="draw"]').click()
+  await expect(page.locator('svg.draw-svg')).toBeVisible()
+  await expect(drawPaths(page).first()).toBeVisible()
+  await expect(charUnits(page)).toHaveCount(0) // distinct from the span renderer
+
+  // D2 — drawn shapes follow the picked font (path data changes) …
+  const dDefault = await drawPaths(page).first().getAttribute('d')
+  await page.getByTestId('font-select').selectOption('Pacifico')
+  await page.waitForFunction(
+    (prev) => {
+      const el = document.querySelector('svg.draw-svg path.glyph')
+      return !!el && el.getAttribute('d') !== prev
+    },
+    dDefault,
+  )
+  // … and follow the headline (one glyph path per non-space char)
+  await page.getByTestId('headline-input').fill('Motion')
+  await expect(drawPaths(page)).toHaveCount(6)
+
+  // D6 — stroke colour comes from the palette --c1 var; a palette swap recolours
+  const strokeBefore = await drawPaths(page).first().evaluate((e) => getComputedStyle(e).stroke)
+  await page.locator('.sw[data-palette="ink"]').click()
+  await expect
+    .poll(() => drawPaths(page).first().evaluate((e) => getComputedStyle(e).stroke))
+    .not.toBe(strokeBefore)
+
+  // D4 — fill/outline toggle is visible for Draw and flips the active state
+  const toggle = page.getByTestId('draw-fill')
+  await expect(toggle).toBeVisible()
+  await toggle.getByText('Outline').click()
+  await expect(toggle.getByText('Outline')).toHaveClass(/active/)
+  await expect(toggle.getByText('Fill')).not.toHaveClass(/active/)
+  await toggle.getByText('Fill').click()
+  await expect(toggle.getByText('Fill')).toHaveClass(/active/)
+
+  // D5 — switching away returns the span renderer with no orphaned SVG; an empty
+  // headline does not crash the stage
+  await page.locator('.preset[data-preset="rise"]').click()
+  await expect(page.locator('svg.draw-svg')).toHaveCount(0)
+  await expect(charUnits(page).first()).toBeVisible()
+  await expect(page.getByTestId('draw-fill')).toHaveCount(0) // toggle hidden off-draw
+  await page.locator('.preset[data-preset="draw"]').click()
+  await page.getByTestId('headline-input').fill('')
+  await expect(page.locator('.hero')).toBeVisible()
+
+  expect(errors).toEqual([])
+})

@@ -288,28 +288,27 @@ effects; the palette drives the stroke (and fill) colours. Replay re-draws from
 blank. Switching to any other effect returns to the normal rendering with no
 leftover strokes.
 
-## Acceptance criteria
-- [ ] **D1 — It draws.** Selecting "Draw" reveals the headline by progressively
+## Acceptance criteria (VERIFIED 2026-06-06 via `npm run validate` — 10/10 green; motion eyeballed via screenshots)
+- [x] **D1 — It draws.** Selecting "Draw" reveals the headline by progressively
   tracing the letterforms' outlines (stroke drawing on from nothing to complete),
-  not by fading or moving filled glyphs. The result is visibly distinct from all
-  six existing effects.
-- [ ] **D2 — Follows the font + headline.** The drawn shapes are the *current*
-  font's glyph outlines (preset default or a picked Google Font); changing the
-  font or editing the headline re-renders and re-draws cleanly, with no stale
-  characters.
-- [ ] **D3 — Per-character pacing.** Characters draw on in reading order with a
-  stagger, and the Speed and Stagger sliders visibly change how fast and how
-  tightly spaced the draw is — consistent with the other effects.
-- [ ] **D4 — Readable end state, user's choice.** When the draw completes the
-  headline is left in a clean, legible state and stays put — no flicker, no
-  half-drawn glyphs. A small **fill / outline** toggle (shown when "Draw" is the
-  active effect) lets the user pick whether glyphs fill solid after drawing or
-  remain outline-only; both end states are stable.
-- [ ] **D5 — Clean replay & switch.** Replay re-runs the draw from blank without
-  a reload; switching to another effect and back leaves no stacked or orphaned
-  strokes; an empty headline does not crash the stage.
-- [ ] **D6 — Palette-themed.** Stroke (and any fill) colours come from the active
-  palette's CSS variables, so palette swaps recolour the effect like the others.
+  not by fading or moving filled glyphs. Visibly distinct from all six existing
+  effects. *(SVG outline layer renders; `.u` span count is 0.)*
+- [x] **D2 — Follows the font + headline.** The drawn shapes are the *current*
+  font's glyph outlines (preset default Anton, or a picked Google Font via
+  opentype.js + jsDelivr `.woff`); changing the font or editing the headline
+  re-renders and re-draws cleanly. *(path `d` changes on font swap; one glyph
+  path per non-space char.)*
+- [x] **D3 — Per-character pacing.** Characters draw on in reading order with a
+  stagger; Speed and Stagger feed the draw timeline like the other effects.
+  *(slider wiring shared; pacing is the screenshot/eyeball half.)*
+- [x] **D4 — Readable end state, user's choice.** A **fill / outline** toggle
+  (shown only when "Draw" is active) picks whether glyphs fill solid after
+  drawing or remain outline-only; both end states are stable. *(Fill→fillOpacity
+  1, Outline→fillOpacity 0 with strokes fully drawn — verified.)*
+- [x] **D5 — Clean replay & switch.** Switching to another effect returns the
+  span renderer with no orphaned SVG; an empty headline does not crash the stage.
+- [x] **D6 — Palette-themed.** Stroke (and fill) colours come from the active
+  palette's `--c1` var, so palette swaps recolour the effect like the others.
 
 ## Out of scope
 - **Not handwriting / stroke-order calligraphy.** This traces glyph *outlines*

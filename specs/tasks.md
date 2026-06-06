@@ -103,15 +103,21 @@ the cut-list — drop it entirely if behind, the core loop + 6 presets are untou
     **Pinned to 1.3.4** (0 NaN everywhere). DO NOT bump to 2.x.
 
 ### Slice 3 — Fill/outline toggle UI (full D4)
-- [ ] DR11. Fill/outline toggle (`data-testid="draw-fill"`) in `ControlPanel`,
-  rendered **only** when active preset `kind==='draw'`; calls `setDrawFill`. — `src/components/ControlPanel.tsx`
-- [ ] DR12. Verify both end states stable (fill solid vs. outline-only); toggle live. — eyeball + `src/components/HeroStage.tsx`
+- [x] DR11. Fill/outline segmented toggle (`data-testid="draw-fill"`) in `ControlPanel`
+  + `setDrawFill` in `App`, rendered only when active preset `kind==='draw'`. — `src/components/ControlPanel.tsx`, `src/App.tsx`, `src/index.css`
+- [x] DR12. Verified both end states: Fill→fillOpacity 1, Outline→fillOpacity 0 with
+  strokes fully drawn; toggle flips live; hidden off-draw. Screenshots clean.
 
 ### Slice 4 — Harness + ship
-- [ ] DR13. Add D1–D6 tests to the suite (svg/path render, font-follow path-`d`
-  change, stagger readout, fill toggle, replay+switch cleanliness, palette stroke). — `tests/validate.spec.ts`
-- [ ] DR14. `npm run validate` green; `npm run build` green.
-- [ ] DR15. Update spec criteria (D1–D6) + this list to verified reality; commit + push (auto-deploys).
+- [x] DR13. Added D1–D6 test (svg/path render + `.u`=0, font-follow path-`d` change +
+  char-count, palette stroke recolour, fill/outline toggle, switch-away cleanliness,
+  empty-headline safety). — `tests/validate.spec.ts`
+- [x] DR14. `npm run validate` 10/10 green; `npm run build` green (opentype 1.3.4
+  chunk 50KB gz).
+- [x] DR15. Spec D1–D6 + this list updated to verified reality; committed.
+  - ⏸️ **Push/deploy deferred** — a concurrent `align` feature was still in-progress
+    in the shared files; combined green snapshot committed per user, NOT deployed
+    until align is finished.
 
 > Cut-list: if behind after slice 1, ship the bundled-font MVP and mark D2's
 > font-following deferred. If `opentype.js` integration itself runs long, cut

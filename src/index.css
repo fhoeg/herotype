@@ -215,6 +215,34 @@ body {
   border-color: var(--accent);
 }
 
+.seg {
+  display: flex;
+  gap: 6px;
+}
+.seg-btn {
+  flex: 1;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 9px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.seg-btn:hover {
+  color: var(--ink);
+}
+.seg-btn.active {
+  color: #120603;
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
 .mood-row {
   display: flex;
   gap: 8px;

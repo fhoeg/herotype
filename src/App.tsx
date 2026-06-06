@@ -19,6 +19,7 @@ const INITIAL: HeroState = {
   speed: 1,
   stagger: 0.04,
   scale: 1,
+  align: 'center',
 }
 
 export default function App() {
@@ -90,12 +91,15 @@ export default function App() {
         state={state}
         lastMood={lastMood}
         setHeadline={(headline) => patch({ headline: headline || ' ' })}
+        setTagline={(tagline) => patch({ tagline })}
+        setAlign={(align) => patch({ align })}
         generate={generate}
         setPreset={(preset) => {
           patch({ preset })
           replay()
         }}
         setFont={(font) => patch({ font })}
+        setDrawFill={(drawFill) => patch({ drawFill })}
         setPalette={(palette) => {
           patch({ palette, colors: { ...palettes[palette] } })
           replay()

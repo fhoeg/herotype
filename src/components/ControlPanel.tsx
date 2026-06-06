@@ -8,9 +8,12 @@ import type { HeroState } from '../lib/types'
 type Props = {
   state: HeroState
   setHeadline: (v: string) => void
+  setTagline: (v: string) => void
+  setAlign: (a: 'left' | 'center' | 'right') => void
   generate: (mood: string) => void
   setPreset: (key: string) => void
   setFont: (family: string) => void
+  setDrawFill: (fill: boolean) => void
   setPalette: (key: string) => void
   setColor: (channel: 'canvas' | 'c1' | 'c2' | 'c3', value: string) => void
   setSpeed: (v: number) => void
@@ -23,9 +26,12 @@ type Props = {
 export function ControlPanel({
   state,
   setHeadline,
+  setTagline,
+  setAlign,
   generate,
   setPreset,
   setFont,
+  setDrawFill,
   setPalette,
   setColor,
   setSpeed,
@@ -46,6 +52,33 @@ export function ControlPanel({
           maxLength={40}
           onChange={(e) => setHeadline(e.target.value)}
         />
+      </div>
+
+      <div className="field">
+        <h2>Sub line</h2>
+        <input
+          type="text"
+          data-testid="tagline-input"
+          value={state.tagline}
+          maxLength={50}
+          onChange={(e) => setTagline(e.target.value)}
+        />
+      </div>
+
+      <div className="field">
+        <h2>Alignment</h2>
+        <div className="seg" data-testid="align">
+          {(['left', 'center', 'right'] as const).map((a) => (
+            <button
+              key={a}
+              className={`seg-btn${state.align === a ? ' active' : ''}`}
+              data-align={a}
+              onClick={() => setAlign(a)}
+            >
+              {a}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="field">
@@ -128,6 +161,27 @@ export function ControlPanel({
           ))}
         </select>
       </div>
+
+      {presets[state.preset].kind === 'draw' && (
+        <div className="field">
+          <h2>Draw style</h2>
+          <div className="seg" data-testid="draw-fill">
+            <button
+              className={`seg-btn${state.drawFill ? ' active' : ''}`}
+              data-on={state.drawFill}
+              onClick={() => setDrawFill(true)}
+            >
+              Fill
+            </button>
+            <button
+              className={`seg-btn${!state.drawFill ? ' active' : ''}`}
+              onClick={() => setDrawFill(false)}
+            >
+              Outline
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="field">
         <h2>Tuning</h2>
