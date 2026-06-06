@@ -36,6 +36,7 @@ export function ControlPanel({
         <h2>Headline</h2>
         <input
           type="text"
+          data-testid="headline-input"
           value={state.headline}
           maxLength={40}
           onChange={(e) => setHeadline(e.target.value)}
@@ -47,16 +48,17 @@ export function ControlPanel({
         <div className="mood-row">
           <input
             type="text"
+            data-testid="mood-input"
             placeholder="e.g. ominous, cyberpunk, heavy"
             value={mood}
             onChange={(e) => setMood(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && generate(mood)}
           />
-          <button className="gen" onClick={() => generate(mood)}>
+          <button className="gen" data-testid="generate" onClick={() => generate(mood)}>
             Generate
           </button>
         </div>
-        <div className="hint">
+        <div className="hint" data-testid="hint">
           {lastMood ? (
             <>
               → <b>{lastMood.presetName}</b> effect · <b>{lastMood.palette}</b>{' '}
@@ -89,6 +91,7 @@ export function ControlPanel({
             <button
               key={p.key}
               className={`preset${state.preset === p.key ? ' active' : ''}`}
+              data-preset={p.key}
               onClick={() => setPreset(p.key)}
             >
               <div className="pname">{p.name}</div>
@@ -102,10 +105,11 @@ export function ControlPanel({
         <h2>Tuning</h2>
         <div className="slider">
           <label>
-            Speed <b>{state.speed.toFixed(1)}×</b>
+            Speed <b data-testid="speed-val">{state.speed.toFixed(1)}×</b>
           </label>
           <input
             type="range"
+            data-testid="speed"
             min={0.4}
             max={2.2}
             step={0.1}
@@ -115,10 +119,11 @@ export function ControlPanel({
         </div>
         <div className="slider">
           <label>
-            Stagger <b>{Math.round(state.stagger * 1000)}ms</b>
+            Stagger <b data-testid="stagger-val">{Math.round(state.stagger * 1000)}ms</b>
           </label>
           <input
             type="range"
+            data-testid="stagger"
             min={0}
             max={120}
             step={5}
@@ -128,10 +133,11 @@ export function ControlPanel({
         </div>
         <div className="slider">
           <label>
-            Scale <b>{state.scale.toFixed(1)}×</b>
+            Scale <b data-testid="scale-val">{state.scale.toFixed(1)}×</b>
           </label>
           <input
             type="range"
+            data-testid="scale"
             min={0.6}
             max={1.6}
             step={0.05}
@@ -148,6 +154,7 @@ export function ControlPanel({
             <div
               key={k}
               className={`sw${state.palette === k ? ' active' : ''}`}
+              data-palette={k}
               title={k}
               style={{
                 background: `linear-gradient(135deg,${v.c1} 0 50%,${v.c2} 50% 100%)`,

@@ -30,6 +30,14 @@ pnpm-debug.log*
 # vercel
 .vercel
 
+# playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+tests/.output
+tests/__screenshots__
+
 # env
 .env
 .env.*

@@ -58,6 +58,7 @@ export function HeroStage({ state, runId }: Props) {
         style={{ transform: `scale(${state.scale})` }}
       >
         <h1
+          data-testid="headline"
           style={{
             fontFamily: `${def.font}, serif`,
             fontWeight: def.weight,
@@ -79,7 +80,9 @@ export function HeroStage({ state, runId }: Props) {
             </Fragment>
           ))}
         </h1>
-        <div className="tag">{state.tagline}</div>
+        <div className="tag" data-testid="tagline">
+          {state.tagline}
+        </div>
       </div>
     </div>
   )

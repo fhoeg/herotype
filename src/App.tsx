@@ -65,10 +65,10 @@ export default function App() {
             HERO<b>TYPE</b> · type-motion generator
           </div>
           <div className="stage-actions">
-            <button className="ghost" onClick={replay}>
+            <button className="ghost" data-testid="replay" onClick={replay}>
               ↻ replay
             </button>
-            <button className="ghost" onClick={copyCode}>
+            <button className="ghost" data-testid="copy" onClick={copyCode}>
               {copied ? '✓ copied' : '⧉ copy code'}
             </button>
           </div>

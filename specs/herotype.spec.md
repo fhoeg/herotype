@@ -127,3 +127,76 @@ invisible time sink; do not build it unless everything else is done.
   `--font-weight`, `--tracking`) so palette/preset swaps are one-liners.
 - Use `text-wrap: balance` on the headline; `clamp()` for responsive type size.
 - Keep `will-change: transform, opacity, filter` on `.u` units.
+
+---
+
+# Validation pass — demo-ready baseline
+
+> The framework is scaffolded and the core loop is wired. This pass does **not**
+> add features — it proves the built product satisfies every acceptance
+> criterion against the *running app* and fixes any gap, so the demo is
+> rehearsable and trustworthy. **Why now:** lock the baseline before any
+> LLM / 3D / share-URL work can destabilise it.
+
+## What "validated" means (user-visible)
+A presenter can sit down at the live URL and, with no console errors, perform
+the full core loop and every individual control, each behaving exactly as
+described — first try, every try, on a clean reload.
+
+## Validation criteria (each must PASS, with the observed failure mode noted if not)
+
+- [ ] **V1 — Live headline.** Editing the headline field re-renders the split
+  text and re-runs the current animation on every change, with no leftover
+  characters, stacked/ghost glyphs, or layout jump. An empty field does not
+  crash or collapse the stage.
+- [ ] **V2 — Six distinct effects.** Selecting each preset (Rise, Kinetic,
+  Wave, Glitch, Neon, Drop) plays a *visibly different* animation and applies
+  that preset's font. Looping effects (Wave bob, Glitch jitter, Neon flicker)
+  run continuously without piling up after repeated switches.
+- [ ] **V3 — The wow beat.** "Generate" (and each mood chip) changes preset
+  **and** palette **and** tagline **together** in one beat, and the hint line
+  reflects the result. A nonsense phrase still yields a valid, animated result
+  (graceful fallback), never a blank stage.
+- [ ] **V4 — Replay.** "↻ replay" re-runs the current animation from the top
+  without a page reload and without leaving the previous run's tweens alive.
+- [ ] **V5 — Tuning sliders.** Speed, Stagger, and Scale each produce a visible,
+  correct change, and their readouts (×, ms, ×) track the value.
+- [ ] **V6 — Copy code.** "⧉ copy code" writes a self-contained snippet to the
+  clipboard reflecting the *current* headline, preset, palette, and tagline,
+  and the button confirms ("✓ copied").
+- [ ] **V7 — Clean load & deploy.** Production URL loads with no uncaught
+  console errors; fonts and the initial animation appear within ~1s; the layout
+  holds on a narrow (mobile) viewport.
+
+## Scope corrections vs. the original spec
+The original criteria assumed the single-file/CDN PoC. For this build they are
+restated to match the locked React + Vite stack:
+- ~~"Runs from a single file, GSAP from CDN"~~ → **V7**: runs as the built Vite
+  app, GSAP bundled, deploys clean on Vercel. *(This supersedes the old single-
+  file criterion; the constitution's React+Vite decision governs.)*
+- Replay/cleanup is verified through behaviour (no stacking), not by asserting a
+  specific `kill()` call — `useGSAP` scope revert is the sanctioned mechanism.
+
+## Out of scope (do NOT do during this pass)
+- No new effects, palettes, sliders, or copy. No LLM mood parser. No 3D.
+- No restyle/redesign. Cosmetic polish only if it is fixing an outright defect
+  surfaced by a criterion (e.g. a layout break), nothing aesthetic-for-its-own-sake.
+- No new dependencies.
+
+## Done when
+All of V1–V7 are checked, any fix is committed and redeployed, and the
+`specs/tasks.md` acceptance list is updated to reflect verified reality.
+
+## Decisions (resolved)
+1. **Verification method → automated browser pass.** Playwright as a dev-only
+   dependency drives the loop and every control, asserts DOM/state (split counts,
+   palette CSS vars, clipboard text), captures screenshots for human review, and
+   fails on any `console.error`. Runs against `vite preview` locally.
+2. **Bug-fix latitude → fix small/obvious in-pass, flag the rest.** A failing
+   criterion gets fixed immediately when the fix is small and obviously correct;
+   anything ambiguous or design-ish is logged and surfaced for triage, not
+   silently changed.
+
+> Note: Playwright is a **dev/test dependency**, not shipped runtime code — it
+> does not breach the "no new dependencies" out-of-scope rule, which governs the
+> app bundle.
