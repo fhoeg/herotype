@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, Fragment } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { presets } from '../lib/presets'
-import { DEFAULT_FONT } from '../lib/fonts'
+import { DEFAULT_FONT, DRAW_DEFAULT_FONT } from '../lib/fonts'
 import { fontFileUrl, BUNDLED_FALLBACK } from '../lib/fontFiles'
 import type { HeroState } from '../lib/types'
 
@@ -178,7 +178,7 @@ function DrawStage({ state, runId }: Props) {
         // Resolve the family: an explicit picker font, else the draw preset's
         // own face. Try its jsDelivr .woff; on any fetch/parse failure fall back
         // to the bundled face so the headline always draws.
-        const family = state.font || DEFAULT_FONT
+        const family = state.font || DRAW_DEFAULT_FONT
         const parse = async (url: string) => {
           const r = await fetch(url)
           if (!r.ok) throw new Error(`font ${r.status}`)

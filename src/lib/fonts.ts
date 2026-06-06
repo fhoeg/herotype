@@ -6,6 +6,14 @@
 export const DEFAULT_FONT = 'Fraunces'
 
 /**
+ * Default face for the Draw effect. opentype.js strokes clean, static outlines
+ * from Anton but mangles serif/variable-derived faces (e.g. Fraunces), so Draw
+ * falls back to this when no font is explicitly chosen. An explicit pick still
+ * wins (font stays independent of the effect for deliberate choices).
+ */
+export const DRAW_DEFAULT_FONT = 'Anton'
+
+/**
  * Curated fonts offered in the font picker. The empty value means
  * "use {@link DEFAULT_FONT}" (preset-independent). Everything else is an
  * override loaded on demand via {@link loadGoogleFont}. The first group are the

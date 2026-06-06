@@ -1,5 +1,5 @@
 import { presets } from './presets'
-import { DEFAULT_FONT } from './fonts'
+import { DEFAULT_FONT, DRAW_DEFAULT_FONT } from './fonts'
 import { fontFileUrl } from './fontFiles'
 import type { HeroState } from './types'
 
@@ -130,9 +130,10 @@ window.addEventListener('load', function () {
 
 function buildDraw(state: HeroState): string {
   const def = presets[state.preset]
-  const fontFamily = `"${state.font || DEFAULT_FONT}", serif`
-  const fontUrl = fontFileUrl(state.font || DEFAULT_FONT)
-  const fallbackUrl = fontFileUrl('Anton')
+  const drawFamily = state.font || DRAW_DEFAULT_FONT
+  const fontFamily = `"${drawFamily}", serif`
+  const fontUrl = fontFileUrl(drawFamily)
+  const fallbackUrl = fontFileUrl(DRAW_DEFAULT_FONT)
   const head = `<style>
 ${sharedCss(state, fontFamily, state.weight || def.weight, def.tracking)}
 </style>
