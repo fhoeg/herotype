@@ -69,19 +69,24 @@ the cut-list — drop it entirely if behind, the core loop + 6 presets are untou
   → `opentype.parse(arrayBuffer)` → `font.getPaths(text, 0, baseline, size)`.
 
 ### Slice 1 — MVP draw (bundled font only → D1, D3, D5, D6 + reduced D2/D4)
-- [ ] DR1. Add `opentype.js` dep (+ `@types/opentype.js` devDep if needed). — `package.json`
-- [ ] DR2. Types: `Preset.kind?: 'spans' | 'draw'` (default spans); `HeroState.drawFill: boolean`. — `src/lib/types.ts`
-- [ ] DR3. Add bundled fallback face `public/fonts/anton.ttf` (guaranteed-parseable). — new asset
-- [ ] DR4. Add `draw` Preset (`kind:'draw'`, no-op `build` stub, font `"Anton"`). — `src/lib/presets.ts`
-- [ ] DR5. `HeroStage` draw branch: async-load the **bundled** font (dynamic
-  `import('opentype.js')`), compute per-glyph `<path d>` + `viewBox`/baseline,
-  render `<svg>` of `<path fill="none" stroke="var(--c1)">`; `useGSAP` tweens each
-  path `strokeDashoffset: len→0` staggered (Speed/Stagger feed it). Empty-headline
-  & loading guards. Scope revert cleans up. — `src/components/HeroStage.tsx`
-- [ ] DR6. Wire `drawFill` into `App` (`INITIAL` default `true`, `setDrawFill`); on
-  draw completion tween `fill-opacity 0→1` iff `drawFill`. — `src/App.tsx`, `src/components/HeroStage.tsx`
-- [ ] DR7. **Checkpoint:** `npm run build` green; "Draw" selectable, draws + replays
-  cleanly, recolours with palette. Core loop still intact. Commit (demoable).
+- [x] DR1. Added `opentype.js` (runtime, dynamically imported → own chunk, 68KB gz)
+  + `@types/opentype.js` devDep. — `package.json`
+- [x] DR2. Types: `Preset.kind?: 'spans' | 'draw'`; `HeroState.drawFill: boolean`. — `src/lib/types.ts`
+- [x] DR3. Bundled fallback face `public/fonts/anton.woff` (opentype-parseable; `.woff`
+  not `.ttf` — matches the spike). — new asset
+- [x] DR4. Added `draw` Preset (`kind:'draw'`, no-op `build` stub, font `"Anton"`). — `src/lib/presets.ts`
+- [x] DR5. `HeroStage` refactored into a hook-free dispatcher → `SpansStage` (existing,
+  byte-stable) | `DrawStage` (new). DrawStage: dynamic `import('opentype.js')`, parses
+  bundled font, per-glyph `<path>` + `viewBox`/baseline, `useGSAP` strokes each
+  `strokeDashoffset: len→0` (Speed/Stagger feed it). Empty-headline + load guards;
+  scope revert cleans up. — `src/components/HeroStage.tsx`, `src/index.css`
+- [x] DR6. `drawFill` in `INITIAL` (default `true`); per-char `fill-opacity 0→1` tween
+  offset one stroke-duration so each glyph fills right after its outline. — `src/App.tsx`, `src/components/HeroStage.tsx`
+  (`setDrawFill` + toggle UI deferred to Slice 3 where it's consumed.)
+- [x] DR7. **Checkpoint PASSED.** `npm run build` green (opentype split to its own
+  lazy chunk); `npm run validate` 9/9 (no regression from the refactor); manual
+  drive of "Draw": 11 glyphs fully stroke→fill (dashoffset 0, fillOpacity 1),
+  stroke=`--c1`, 0 console errors, screenshot reads clean. Committing (demoable).
 
 ### Slice 2 — Follow the picked font (full D2)
 - [ ] DR8. `src/lib/fontFiles.ts` (new): `fontFileUrl(family)` → jsDelivr `@fontsource`
