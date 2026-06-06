@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, Fragment } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { presets } from '../lib/presets'
+import { fontFileUrl, familyName, BUNDLED_FALLBACK } from '../lib/fontFiles'
 import type { HeroState } from '../lib/types'
 
 gsap.registerPlugin(useGSAP)
@@ -76,8 +77,14 @@ function SpansStage({ state, runId }: Props) {
     },
     {
       scope,
+      // NOTE: state.headline is intentionally NOT a dependency. The split spans
+      // are React-driven, so editing the headline updates the text live and the
+      // new chars render at their natural CSS opacity (immediately readable).
+      // Re-running the entrance reveal on every keystroke restarted a ~1.5s
+      // staggered animation each time, leaving the text faint/unreadable while
+      // typing. The reveal now fires on load and on any replay/preset/style
+      // change (runId, preset, font, colours, speed, stagger).
       dependencies: [
-        state.headline,
         state.preset,
         state.font,
         state.colors.canvas,
@@ -148,6 +155,7 @@ type Glyphs = { ds: string[]; width: number; height: number }
  */
 function DrawStage({ state, runId }: Props) {
   const scope = useRef<HTMLDivElement>(null)
+  const def = presets[state.preset]
   const [glyphs, setGlyphs] = useState<Glyphs | null>(null)
 
   // Load the font binary + compute glyph outlines whenever the text changes.
@@ -162,10 +170,22 @@ function DrawStage({ state, runId }: Props) {
       try {
         const mod = await import('opentype.js')
         const opentype = (mod as unknown as { default?: typeof mod }).default ?? mod
-        const url = `${import.meta.env.BASE_URL}fonts/anton.woff`
-        const buf = await fetch(url).then((r) => r.arrayBuffer())
+        // Resolve the family: an explicit picker font, else the draw preset's
+        // own face. Try its jsDelivr .woff; on any fetch/parse failure fall back
+        // to the bundled face so the headline always draws.
+        const family = state.font || familyName(def.font)
+        const parse = async (url: string) => {
+          const r = await fetch(url)
+          if (!r.ok) throw new Error(`font ${r.status}`)
+          return opentype.parse(await r.arrayBuffer())
+        }
+        let font
+        try {
+          font = await parse(fontFileUrl(family))
+        } catch {
+          font = await parse(BUNDLED_FALLBACK)
+        }
         if (cancelled) return
-        const font = opentype.parse(buf)
         const unit = DRAW_SIZE / font.unitsPerEm
         const ascent = font.ascender * unit
         const descent = font.descender * unit // negative
