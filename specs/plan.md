@@ -91,3 +91,66 @@ If Playwright setup runs long, ship assertions for **V1 (headline) + V3
 (Generate) + V6 (copy)** — the literal core loop — plus the global no-error
 guard (V7), and eyeball V2/V4/V5 manually. This is the cut-list fallback;
 everything else is additive.
+
+---
+
+# Plan — Font override (F1–F6)
+
+The feature is **already implemented** in the working tree. This plan verifies
+it against the spec and fixes the one gap found.
+
+## Module map (as built)
+| Concern | File | Notes |
+|---|---|---|
+| Curated list + lazy loader | `src/lib/fonts.ts` | `googleFonts` (~16 faces) + `loadGoogleFont(family)` injecting a `<link>` once per family. |
+| State field | `src/lib/types.ts` | `HeroState.font: string` — `''` = preset default. |
+| Picker UI | `src/components/ControlPanel.tsx` | `<select data-testid="font-select">`, options preview their own face, `onMouseEnter` preloads. |
+| Live apply | `src/components/HeroStage.tsx` | `h1` font-family = `"${font}", ${preset.font}, serif` when set, else preset font. |
+| Wiring + lazy fetch | `src/App.tsx` | `setFont` patches `font`; effect calls `loadGoogleFont(state.font)`. `setPreset`/`generate` leave `font` untouched (F6 sticky ✓). |
+| Export | `src/lib/exportSnippet.ts` | Emits `"${font}", ${preset.font}` (preset fallback); preset-only when no override (F5 ✓). |
+
+## Conformance check (spec → code)
+- **F1 default** ✓ `font: ''`, picker reads "Preset default".
+- **F2 applies live + re-animates** ⚠️ **GAP.** Font applies live (React
+  re-render), but `font` is **not** in `HeroStage`'s `useGSAP` dependency array
+  and `setFont` does not `replay()`, so the headline does not re-animate on a
+  font change. **Fix (one line):** add `state.font` to the `useGSAP`
+  dependencies in `HeroStage.tsx`, matching how headline/preset already trigger
+  a re-run. No other file changes.
+- **F3 on-demand** ✓ `loadGoogleFont` lazy + `onMouseEnter` preview; injects a
+  `<link>` to `fonts.googleapis.com` only when a face is chosen/hovered.
+- **F4 curated list** ✓ 16 distinct faces across serif/sans/display/mono/script.
+- **F5 export** ✓ font carried into the snippet with preset fallback.
+- **F6 sticky** ✓ `setPreset`/`generate` never write `font`; only the picker's
+  "Preset default" clears it.
+
+## Harness extension
+Add **one test** to `tests/validate.spec.ts` (no new file, no new dep):
+| Crit | Assertion |
+|---|---|
+| F1 | `font-select` value is `''`; first option label "Preset default"; default `h1` font-family contains the preset font. |
+| F2 | `selectOption('Anton')` → `h1` font-family contains `Anton` **and** the preset fallback; selecting `''` reverts (no `Anton`). |
+| F3 | After selecting, a `head link[href*="Anton"]` to `fonts.googleapis.com` exists (proves on-demand fetch). |
+| F4 | `font-select` exposes > 10 options including a serif, a display, and a mono face. |
+| F5 | Pick `Anton`, copy → clipboard contains `Anton`. |
+| F6 | Pick `Anton`, switch preset to `wave`, then Generate "retro neon" → `h1` font-family still contains `Anton`. |
+
+Re-animation (F2's motion half) is delivered by the one-line dependency fix;
+the test asserts the **stable, observable** part (font applied/reverted). Motion
+quality stays a screenshot/eyeball concern, consistent with the V-suite.
+
+## New dependency
+**None.** Google Fonts CSS is the same loading mechanism already used by
+`index.html`; `@playwright/test` already present. Fully within LOCKED tech.
+
+## Risks & mitigations
+- **Async webfont load (FOUT)** → assert the inline/computed `font-family`
+  *string* and the injected `<link>`, never rendered glyph pixels. Timing-tolerant.
+- **`selectOption` vs React controlled `<select>`** → `selectOption` dispatches a
+  native `change` that React's delegated listener picks up; reliable (same basis
+  as the slider keyboard approach).
+
+## Smallest version / cut-list
+If time is short, ship **F2 (apply+revert) + F5 (export) + F6 (sticky)** — the
+user-visible heart of the feature — and eyeball F1/F3/F4. The F2 one-line fix is
+not optional (it's a spec conformance gap), but it's trivial.

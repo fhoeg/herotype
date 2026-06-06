@@ -41,6 +41,7 @@ export function HeroStage({ state, runId }: Props) {
       dependencies: [
         state.headline,
         state.preset,
+        state.font,
         state.speed,
         state.stagger,
         runId,

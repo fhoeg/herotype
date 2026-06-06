@@ -200,3 +200,63 @@ All of V1–V7 are checked, any fix is committed and redeployed, and the
 > Note: Playwright is a **dev/test dependency**, not shipped runtime code — it
 > does not breach the "no new dependencies" out-of-scope rule, which governs the
 > app bundle.
+
+---
+
+# Font override
+
+> A picker that swaps the active preset's typeface for one of a curated set of
+> Google Fonts, or reverts to the preset's own font. **Why:** the six presets
+> ship one font personality each; letting the user retype the hero in a
+> different face — Anton, Pacifico, Press Start 2P — multiplies the looks they
+> can land on for "their own website" at near-zero cost, and makes the
+> copy-code output match what they see. It is **tuning, not the wow beat** — the
+> mood Generate beat still leads the demo; this is a secondary control.
+
+## What the user sees
+A "Font" control in the panel, near the effect/tuning controls. It lists
+**"Preset default"** (selected initially) plus a curated set (~16) of
+distinctive Google Fonts. Picking one re-renders the headline in that face and
+re-runs the current animation; picking "Preset default" returns to the preset's
+own typeface. Only the *font family* changes — weight, tracking, palette, and
+the animation itself are untouched.
+
+## Acceptance criteria (VERIFIED 2026-06-06 via `npm run validate` — 8/8 green)
+- [x] **F1 — Default is the preset font.** With no override chosen, every preset
+  renders in its own typeface exactly as before this feature existed; the
+  control reads "Preset default".
+- [x] **F2 — Override applies live.** Choosing a font immediately re-renders and
+  re-animates the headline in that font; choosing "Preset default" reverts to
+  the active preset's font. No page reload. *(Required adding `font` to the
+  HeroStage `useGSAP` deps so the change re-animates — done.)*
+- [x] **F3 — Loaded on demand.** Fonts are not all fetched up front; a font is
+  fetched when it's chosen (or previewed) and applies without a manual reload. A
+  brief unstyled-text flash on first use is acceptable.
+- [x] **F4 — Curated, legible list.** The list is a hand-picked set of visually
+  distinct faces (serif / sans / display / mono / script), each shown so the
+  user can tell them apart, with no broken or unavailable entries.
+- [x] **F5 — Export reflects it.** Copy-code emits the chosen font in the
+  snippet's `font-family`, with the preset font kept as a fallback; "Preset
+  default" emits just the preset font.
+- [x] **F6 — Override is sticky.** An explicit font persists when the user
+  switches presets and when they click Generate; it clears only when the user
+  picks "Preset default". (See resolved decisions.)
+
+## Out of scope
+- No font **weight / style / size** controls — weight & tracking stay owned by
+  the preset. No per-character font mixing.
+- No **arbitrary** Google Fonts search or custom/uploaded fonts — curated list only.
+- No **persistence** across reloads (belongs to the future share-URL feature).
+- The export stays a **styled stub**; it does not also inject the `@import`/`<link>`
+  for the font (a TODO comment is enough), consistent with the export's existing scope.
+
+## Decisions (resolved)
+1. **Preset switch keeps the override.** Choosing an effect does **not** reset
+   the font; the user's chosen typeface persists across preset switches. Font is
+   an independent, user-owned control. *(Matches current implementation.)*
+2. **Generate keeps the override.** The mood beat reconfigures effect + palette
+   + timing + tagline only; it leaves the font untouched. *(Matches current
+   implementation.)*
+
+> Both decisions confirm the existing behaviour — no behavioural change needed.
+> "Preset default" is the single explicit reset path. This is the F6 criterion.

@@ -193,3 +193,53 @@ test('V7 — loads clean and holds on a narrow viewport', async ({ page, errors 
   await page.screenshot({ path: `${SHOTS}/mobile.png`, fullPage: true })
   expect(errors).toEqual([])
 })
+
+// ---------------------------------------------------------------------------
+// F1–F6 — font override
+// ---------------------------------------------------------------------------
+const fontFamilyOf = (page: Page) =>
+  page.getByTestId('headline').evaluate((el) => getComputedStyle(el).fontFamily)
+
+test('F1–F6 — font override applies, reverts, loads on demand, exports, sticks', async ({
+  page,
+  errors,
+}) => {
+  await gotoApp(page)
+  const select = page.getByTestId('font-select')
+
+  // F1 — default is "Preset default" → the active preset's font (rise = Fraunces)
+  await expect(select).toHaveValue('')
+  await expect(select.locator('option').first()).toHaveText('Preset default')
+  expect(await fontFamilyOf(page)).toContain('Fraunces')
+
+  // F4 — curated, distinct list (serif / display / mono represented)
+  expect(await select.locator('option').count()).toBeGreaterThan(10)
+  for (const f of ['Playfair Display', 'Anton', 'Major Mono Display']) {
+    await expect(select.locator('option', { hasText: f })).toHaveCount(1)
+  }
+
+  // F2 — choosing a font applies live, keeping the preset font as fallback
+  await select.selectOption('Anton')
+  let family = await fontFamilyOf(page)
+  expect(family).toContain('Anton')
+  expect(family).toContain('Fraunces') // preset fallback retained
+
+  // F3 — the face is fetched on demand (a Google Fonts <link> appears)
+  await expect(page.locator('head link[href*="Anton"]')).toHaveCount(1)
+
+  // F5 — export carries the chosen font
+  await page.getByTestId('copy').click()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('Anton')
+
+  // F6 — override is sticky across a preset switch AND a Generate
+  await page.locator('.preset[data-preset="wave"]').click()
+  expect(await fontFamilyOf(page)).toContain('Anton')
+  await page.getByRole('button', { name: 'retro neon' }).click()
+  expect(await fontFamilyOf(page)).toContain('Anton')
+
+  // F2 (revert) — "Preset default" clears the override
+  await select.selectOption('')
+  expect(await fontFamilyOf(page)).not.toContain('Anton')
+
+  expect(errors).toEqual([])
+})

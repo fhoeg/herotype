@@ -43,3 +43,13 @@ Ordered: harness first, then core-loop criteria, then the rest, fixes in-pass.
 
 > Outcome: no defects found. `npm run validate` is now a reusable regression
 > gate before each demo. Screenshots in `tests/__screenshots__/` (gitignored).
+
+## 2026-06-06 — Font override (F1–F6) — COMPLETE, 8/8 green
+Feature already implemented; this verified it + fixed the one F2 gap.
+- [x] FT1. F2 conformance fix: added `state.font` to `HeroStage` `useGSAP` deps so a font change re-animates. — `src/components/HeroStage.tsx`
+- [x] FT2. Added font test (F1–F6) to the suite: default, apply+revert, on-demand `<link>`, list shape, export, sticky-across-preset+Generate. — `tests/validate.spec.ts`
+- [x] FT3. `npm run validate` green (8 tests); `npm run build` green.
+- [x] FT4. Spec criteria + this list updated to verified reality; committed + pushed (auto-deploys).
+
+> Outcome: feature conforms to F1–F6. One gap found & fixed (F2 re-animate, 1 line).
+> Suite is now 8 tests — the font test guards the override against regressions.
