@@ -4,7 +4,7 @@ import { ControlPanel } from './components/ControlPanel'
 import { presets } from './lib/presets'
 import { palettes } from './lib/palettes'
 import { parseMood } from './lib/mood'
-import { buildSnippet } from './lib/exportSnippet'
+import { buildExport } from './lib/exportHtml'
 import { loadGoogleFont } from './lib/fonts'
 import type { HeroState } from './lib/types'
 
@@ -64,7 +64,7 @@ export default function App() {
   }
 
   const copyCode = async () => {
-    await navigator.clipboard?.writeText(buildSnippet(state))
+    await navigator.clipboard?.writeText(buildExport(state))
     setCopied(true)
     setTimeout(() => setCopied(false), 1400)
   }

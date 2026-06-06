@@ -415,3 +415,34 @@ test('Weight selector overrides the preset font-weight and reverts', async ({ pa
 
   expect(errors).toEqual([])
 })
+
+// ---------------------------------------------------------------------------
+// Copy code exports FULL, runnable, self-contained HTML
+// ---------------------------------------------------------------------------
+test('Copy code exports a self-contained, runnable hero', async ({ page, errors }) => {
+  await gotoApp(page)
+  await page.locator('.preset[data-preset="glitch"]').click()
+  await page.getByTestId('copy').click()
+  const html = await page.evaluate(() => navigator.clipboard.readText())
+
+  // a complete document with the runtime deps inlined + the real timeline
+  expect(html).toContain('<!doctype html>')
+  expect(html).toContain('gsap.min.js')
+  expect(html).toContain('aria-label="Make it move."')
+  expect(html).toContain('gsap.timeline()')
+  expect(html).toContain('var(--c2)') // glitch strokes use the themed accents
+
+  // and it actually runs: load it standalone, GSAP fetched from the CDN
+  await page.setContent(html, { waitUntil: 'load' })
+  await expect(page.locator('.herotype h1')).toHaveAttribute('aria-label', 'Make it move.')
+  expect(await page.locator('.herotype .u').count()).toBeGreaterThan(0)
+  expect(await page.evaluate(() => typeof window.gsap)).toBe('object')
+  await page.waitForTimeout(400)
+  const animated = await page
+    .locator('.herotype .u')
+    .first()
+    .evaluate((el) => !!el.getAttribute('style'))
+  expect(animated).toBe(true)
+
+  expect(errors).toEqual([])
+})

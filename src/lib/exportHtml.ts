@@ -1,0 +1,182 @@
+import { presets } from './presets'
+import { DEFAULT_FONT } from './fonts'
+import { fontFileUrl } from './fontFiles'
+import type { HeroState } from './types'
+
+/**
+ * Build a COMPLETE, self-contained, runnable HTML document for the current
+ * hero — markup + CSS + GSAP (CDN) + the real animation timeline — so it can be
+ * pasted into any page and works as-is. (Supersedes the old styled-stub export.)
+ */
+
+const esc = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const escAttr = (s: string) => esc(s).replace(/"/g, '&quot;')
+/** Round baked numbers so the emitted JS stays readable. */
+const n = (x: number) => +x.toFixed(3)
+
+const ALIGN_ITEMS = { left: 'flex-start', center: 'center', right: 'flex-end' } as const
+
+/** Hand-rolled per-character split, emitted straight into the markup. */
+function splitMarkup(text: string): string {
+  return text
+    .split(' ')
+    .map((word, wi, arr) => {
+      const chars = [...word].map((ch) => `<span class="u">${esc(ch)}</span>`).join('')
+      const space = wi < arr.length - 1 ? '<span class="space u"> </span>' : ''
+      return `<span class="word">${chars}</span>${space}`
+    })
+    .join('')
+}
+
+/** Google Fonts stylesheet for the headline face + the Space Mono sub line. */
+function fontsHref(font: string): string {
+  const fam = (font || DEFAULT_FONT).replace(/ /g, '+')
+  return `https://fonts.googleapis.com/css2?family=${fam}:wght@400;700&family=Space+Mono:wght@400;700&display=swap`
+}
+
+/** The GSAP "in" timeline for each span-based preset, with params baked in. */
+function timelineJs(key: string, speed: number, stagger: number): string {
+  switch (key) {
+    case 'rise':
+      return `tl.from(units,{yPercent:120,opacity:0,filter:'blur(8px)',duration:${n(0.9 / speed)},ease:'power3.out',stagger:${n(stagger)}});`
+    case 'kinetic':
+      return `tl.from(units,{scale:0,opacity:0,rotation:function(){return gsap.utils.random(-25,25)},transformOrigin:'50% 50%',duration:${n(0.6 / speed)},ease:'back.out(2.2)',stagger:${n(stagger)}});`
+    case 'wave':
+      return `tl.from(units,{yPercent:90,opacity:0,duration:${n(1 / speed)},ease:'sine.out',stagger:${n(stagger * 1.3)}})
+    .to(units,{yPercent:-8,duration:${n(1.1 / speed)},ease:'sine.inOut',stagger:{each:${n(stagger * 1.3)},yoyo:true,repeat:-1}},'>-0.2');`
+    case 'glitch':
+      return `tl.from(units,{opacity:0,x:function(){return gsap.utils.random(-40,40)},skewX:30,duration:${n(0.4 / speed)},ease:'power4.out',stagger:${n(stagger * 0.6)}});
+  units.forEach(function(u){gsap.to(u,{x:function(){return gsap.utils.random(-3,3)},textShadow:'2px 0 var(--c2), -2px 0 var(--c3)',duration:0.08,repeat:-1,repeatRefresh:true,repeatDelay:gsap.utils.random(0.4,2.4),yoyo:true,ease:'none'});});`
+    case 'neon':
+      return `tl.set(units,{textShadow:'0 0 18px var(--c2), 0 0 40px var(--c2)'})
+    .from(units,{opacity:0,duration:${n(0.5 / speed)},ease:'power1.in',stagger:{each:${n(stagger)},from:'random'}})
+    .to(units,{opacity:0.78,duration:0.06,repeat:3,yoyo:true,stagger:{each:0.02,from:'random'}},'>-0.1');`
+    case 'drop':
+      return `tl.from(units,{yPercent:-180,opacity:0,duration:${n(1.1 / speed)},ease:'elastic.out(1,0.45)',stagger:${n(stagger)}});`
+    default:
+      return `tl.from(units,{opacity:0,y:20,duration:${n(0.8 / speed)},ease:'power2.out',stagger:${n(stagger)}});`
+  }
+}
+
+function sharedCss(state: HeroState, fontFamily: string, weight: number, tracking: string): string {
+  const c = state.colors
+  return `  .herotype{
+    --c1:${c.c1}; --c2:${c.c2}; --c3:${c.c3}; --canvas:${c.canvas};
+    background:var(--canvas); color:var(--c1);
+    min-height:100vh; box-sizing:border-box; padding:6vmin;
+    display:flex; flex-direction:column; justify-content:center;
+    align-items:${ALIGN_ITEMS[state.align]}; text-align:${state.align};
+    overflow:hidden;
+  }
+  .herotype h1{
+    margin:0; font-family:${fontFamily}; font-weight:${weight};
+    letter-spacing:${tracking}; line-height:.95;
+    font-size:clamp(2.6rem,9vw,8.5rem); color:var(--c1); text-wrap:balance;
+  }
+  .herotype .ht-tag{
+    margin:1.4rem 0 0; font-family:"Space Mono",monospace;
+    font-size:clamp(.7rem,1.3vw,.95rem); letter-spacing:.28em;
+    text-transform:uppercase; color:var(--c2);
+  }
+  .herotype .u{display:inline-block;will-change:transform,opacity,filter}
+  .herotype .word{display:inline-block;white-space:nowrap}
+  .herotype .space{display:inline-block;width:.28em}
+  .herotype svg{display:block;height:clamp(3rem,13vw,9rem);width:auto;max-width:88vw;overflow:visible}`
+}
+
+function shell(state: HeroState, head: string, body: string): string {
+  const def = presets[state.preset]
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HEROTYPE — ${escAttr(state.headline)}</title>
+<!-- HEROTYPE export · ${def.name} · ${state.palette || 'custom'} palette -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="${fontsHref(state.font)}" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+${head}</head>
+<body>
+${body}</body>
+</html>`
+}
+
+function buildSpans(state: HeroState): string {
+  const def = presets[state.preset]
+  const fontFamily = `"${state.font || DEFAULT_FONT}", serif`
+  const weight = state.weight || def.weight
+  const head = `<style>
+${sharedCss(state, fontFamily, weight, def.tracking)}
+</style>
+`
+  const body = `<section class="herotype">
+  <h1 aria-label="${escAttr(state.headline)}">${splitMarkup(state.headline)}</h1>
+  <p class="ht-tag">${esc(state.tagline)}</p>
+</section>
+<script>
+window.addEventListener('load', function () {
+  var units = gsap.utils.toArray('.herotype .u');
+  var tl = gsap.timeline();
+  ${timelineJs(state.preset, state.speed, state.stagger)}
+  gsap.fromTo('.herotype .ht-tag', { opacity: 0, y: 10 }, { opacity: 0.9, y: 0, duration: 0.6, delay: 0.4, ease: 'power2.out' });
+});
+</script>
+`
+  return shell(state, head, body)
+}
+
+function buildDraw(state: HeroState): string {
+  const def = presets[state.preset]
+  const fontFamily = `"${state.font || DEFAULT_FONT}", serif`
+  const fontUrl = fontFileUrl(state.font || DEFAULT_FONT)
+  const fallbackUrl = fontFileUrl('Anton')
+  const head = `<style>
+${sharedCss(state, fontFamily, state.weight || def.weight, def.tracking)}
+</style>
+`
+  const fillStep = state.drawFill
+    ? `\n    tl.to(paths, { fillOpacity: 1, duration: ${n(0.5 / state.speed)}, ease: 'power2.out', stagger: ${n(state.stagger * 3 + 0.12)} }, '>-0.3');`
+    : ''
+  const body = `<section class="herotype">
+  <svg role="img" aria-label="${escAttr(state.headline)}"></svg>
+  <p class="ht-tag">${esc(state.tagline)}</p>
+</section>
+<script src="https://cdn.jsdelivr.net/npm/opentype.js@2.0.0/dist/opentype.min.js"></script>
+<script>
+window.addEventListener('load', function () {
+  var SIZE = 200, TEXT = ${JSON.stringify(state.headline)};
+  function draw(buf) {
+    var font = opentype.parse(buf);
+    var unit = SIZE / font.unitsPerEm, ascent = font.ascender * unit, descent = font.descender * unit;
+    var svg = document.querySelector('.herotype svg');
+    svg.setAttribute('viewBox', '0 0 ' + font.getAdvanceWidth(TEXT, SIZE) + ' ' + (ascent - descent));
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    font.getPaths(TEXT, 0, ascent, SIZE).forEach(function (p) {
+      var d = p.toPathData(2); if (!d) return;
+      var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      el.setAttribute('d', d); el.setAttribute('class', 'glyph');
+      el.setAttribute('fill', 'var(--c1)'); el.setAttribute('stroke', 'var(--c1)');
+      el.setAttribute('stroke-width', '3'); el.setAttribute('stroke-linejoin', 'round'); el.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(el);
+    });
+    var paths = gsap.utils.toArray('.herotype .glyph');
+    paths.forEach(function (p) { var len = p.getTotalLength(); gsap.set(p, { strokeDasharray: len, strokeDashoffset: len, fillOpacity: 0 }); });
+    var tl = gsap.timeline();
+    tl.to(paths, { strokeDashoffset: 0, duration: ${n(1 / state.speed)}, ease: 'power1.inOut', stagger: ${n(state.stagger * 3 + 0.12)} });${fillStep}
+    gsap.fromTo('.herotype .ht-tag', { opacity: 0, y: 10 }, { opacity: 0.9, y: 0, duration: 0.6, delay: 0.4, ease: 'power2.out' });
+  }
+  fetch(${JSON.stringify(fontUrl)}).then(function (r) { return r.arrayBuffer(); })
+    .then(draw)
+    .catch(function () { fetch(${JSON.stringify(fallbackUrl)}).then(function (r) { return r.arrayBuffer(); }).then(draw); });
+});
+</script>
+`
+  return shell(state, head, body)
+}
+
+export function buildExport(state: HeroState): string {
+  return presets[state.preset].kind === 'draw' ? buildDraw(state) : buildSpans(state)
+}
