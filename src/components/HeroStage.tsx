@@ -60,7 +60,9 @@ export function HeroStage({ state, runId }: Props) {
         <h1
           data-testid="headline"
           style={{
-            fontFamily: `${def.font}, serif`,
+            fontFamily: state.font
+              ? `"${state.font}", ${def.font}, serif`
+              : `${def.font}, serif`,
             fontWeight: def.weight,
             letterSpacing: def.tracking,
           }}

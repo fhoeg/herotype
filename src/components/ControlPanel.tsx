@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { presets } from '../lib/presets'
 import { palettes } from '../lib/palettes'
+import { googleFonts, loadGoogleFont } from '../lib/fonts'
 import { moodChips } from '../lib/mood'
 import type { HeroState } from '../lib/types'
 
@@ -9,6 +10,7 @@ type Props = {
   setHeadline: (v: string) => void
   generate: (mood: string) => void
   setPreset: (key: string) => void
+  setFont: (family: string) => void
   setPalette: (key: string) => void
   setSpeed: (v: number) => void
   setStagger: (v: number) => void
@@ -22,6 +24,7 @@ export function ControlPanel({
   setHeadline,
   generate,
   setPreset,
+  setFont,
   setPalette,
   setSpeed,
   setStagger,
@@ -99,6 +102,29 @@ export function ControlPanel({
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="field">
+        <h2>Font</h2>
+        <select
+          className="font-select"
+          data-testid="font-select"
+          value={state.font}
+          style={{ fontFamily: state.font ? `"${state.font}", inherit` : 'inherit' }}
+          onChange={(e) => setFont(e.target.value)}
+        >
+          <option value="">Preset default</option>
+          {googleFonts.map((f) => (
+            <option
+              key={f}
+              value={f}
+              style={{ fontFamily: `"${f}"` }}
+              onMouseEnter={() => loadGoogleFont(f)}
+            >
+              {f}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="field">

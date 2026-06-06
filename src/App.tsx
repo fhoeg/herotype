@@ -5,12 +5,14 @@ import { presets } from './lib/presets'
 import { palettes } from './lib/palettes'
 import { parseMood } from './lib/mood'
 import { buildSnippet } from './lib/exportSnippet'
+import { loadGoogleFont } from './lib/fonts'
 import type { HeroState } from './lib/types'
 
 const INITIAL: HeroState = {
   headline: 'Make it move.',
   tagline: 'vibe code festival 2026',
   preset: 'rise',
+  font: '',
   palette: 'ember',
   speed: 1,
   stagger: 0.04,
@@ -36,6 +38,11 @@ export default function App() {
     root.setProperty('--c1', p.c1)
     root.setProperty('--c2', p.c2)
   }, [state.palette])
+
+  // Lazily pull in the selected Google Font (no-op for preset default).
+  useEffect(() => {
+    loadGoogleFont(state.font)
+  }, [state.font])
 
   const patch = (next: Partial<HeroState>) => setState((s) => ({ ...s, ...next }))
   const replay = () => setRunId((n) => n + 1)
@@ -85,6 +92,7 @@ export default function App() {
           patch({ preset })
           replay()
         }}
+        setFont={(font) => patch({ font })}
         setPalette={(palette) => {
           patch({ palette })
           replay()

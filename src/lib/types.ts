@@ -49,6 +49,8 @@ export type HeroState = {
   headline: string
   tagline: string
   preset: string
+  /** Google Font override; '' = use the active preset's own font. */
+  font: string
   palette: string
   speed: number
   /** seconds */

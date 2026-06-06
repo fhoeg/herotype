@@ -186,6 +186,22 @@ body {
   color: #55555f;
 }
 
+.font-select {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 15px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  outline: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.font-select:focus {
+  border-color: var(--accent);
+}
+
 .mood-row {
   display: flex;
   gap: 8px;
