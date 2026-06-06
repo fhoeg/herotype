@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HEROTYPE — typographic hero generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Space+Mono:wght@400;700&family=Archivo+Black&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+  :root{
+    --bg:#0a0a0c; --panel:#111114; --panel-2:#16161b;
+    --line:#26262e; --ink:#f4f1ea; --muted:#8a8a96;
+    --accent:#ff5a3c; --accent-2:#19d3c5;
+    --c1:#f4f1ea; --c2:#ff5a3c; --canvas:#0a0a0c;
+    --display:"Fraunces"; --font-weight:600; --tracking:-0.02em;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(900px 500px at 80% -10%, rgba(255,90,60,0.10), transparent 60%),
+      radial-gradient(700px 600px at -10% 110%, rgba(25,211,197,0.08), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Bricolage Grotesque",system-ui,sans-serif;
+    display:grid; grid-template-columns: 1fr 340px; min-height:100vh;
+    overflow:hidden;
+  }
+  /* ---------- STAGE ---------- */
+  .stage{position:relative;display:flex;flex-direction:column;min-width:0}
+  .topbar{display:flex;align-items:center;justify-content:space-between;
+    padding:18px 28px;border-bottom:1px solid var(--line)}
+  .brand{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--muted)}
+  .brand b{color:var(--accent)}
+  .stage-actions{display:flex;gap:8px}
+  .ghost{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);background:transparent;
+    border:1px solid var(--line);padding:8px 14px;border-radius:999px;cursor:pointer;
+    transition:.2s}
+  .ghost:hover{color:var(--ink);border-color:var(--muted)}
+
+  .canvas{flex:1;position:relative;display:flex;align-items:center;justify-content:center;
+    padding:6vmin;overflow:hidden;background:var(--canvas);transition:background .6s}
+  .canvas::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background-image:radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:4px 4px;mix-blend-mode:overlay;opacity:.6}
+  .hero{position:relative;text-align:center;max-width:90%;z-index:2}
+  .hero h1{
+    font-family:var(--display),serif;font-weight:var(--font-weight);
+    letter-spacing:var(--tracking);line-height:.95;
+    font-size:clamp(2.6rem,9vw,8.5rem);color:var(--c1);
+    text-wrap:balance}
+  .hero .tag{margin-top:1.4rem;font-family:"Space Mono",monospace;
+    font-size:clamp(.7rem,1.3vw,.95rem);letter-spacing:.28em;text-transform:uppercase;
+    color:var(--c2);opacity:0}
+  /* split unit */
+  .u{display:inline-block;will-change:transform,opacity,filter}
+  .word{display:inline-block;white-space:nowrap}
+  .space{display:inline-block;width:.28em}
+
+  /* ---------- PANEL ---------- */
+  .panel{background:var(--panel);border-left:1px solid var(--line);
+    padding:24px 22px;display:flex;flex-direction:column;gap:22px;overflow-y:auto}
+  .panel h2{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .field input[type=text]{width:100%;background:var(--panel-2);border:1px solid var(--line);
+    color:var(--ink);font-family:"Bricolage Grotesque";font-size:15px;padding:12px 14px;
+    border-radius:10px;outline:none;transition:.2s}
+  .field input[type=text]:focus{border-color:var(--accent)}
+  .field input::placeholder{color:#55555f}
+
+  .mood-row{display:flex;gap:8px;margin-top:9px}
+  .mood-row input{flex:1}
+  .gen{background:var(--accent);color:#120603;border:none;font-family:"Space Mono",monospace;
+    font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;
+    padding:0 16px;border-radius:10px;cursor:pointer;white-space:nowrap;transition:.15s}
+  .gen:hover{filter:brightness(1.08)}
+  .gen:active{transform:translateY(1px)}
+  .hint{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.45}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .chip{font-size:11px;color:var(--muted);background:var(--panel-2);
+    border:1px solid var(--line);padding:5px 9px;border-radius:7px;cursor:pointer;transition:.15s}
+  .chip:hover{color:var(--ink)}
+
+  .presets{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .preset{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    padding:11px 12px;cursor:pointer;text-align:left;transition:.18s;position:relative;overflow:hidden}
+  .preset:hover{border-color:var(--muted)}
+  .preset.active{border-color:var(--accent);background:#1c1410}
+  .preset .pname{font-size:13px;font-weight:600}
+  .preset .pdesc{font-size:11px;color:var(--muted);margin-top:2px}
+
+  .slider{margin-bottom:14px}
+  .slider label{display:flex;justify-content:space-between;font-size:12px;
+    color:var(--muted);margin-bottom:6px}
+  .slider label b{color:var(--ink);font-family:"Space Mono",monospace}
+  input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:3px;
+    background:var(--line);border-radius:3px;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;
+    border-radius:50%;background:var(--accent);cursor:pointer;border:3px solid var(--bg)}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:3px solid var(--bg)}
+
+  .swatches{display:flex;gap:8px;flex-wrap:wrap}
+  .sw{width:30px;height:30px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:.15s}
+  .sw.active{border-color:var(--ink)}
+
+  .foot{margin-top:auto;font-size:11px;color:#55555f;font-family:"Space Mono",monospace;
+    letter-spacing:.08em;line-height:1.6}
+  /* glitch pseudo layers */
+  .glitching .hero h1{position:relative}
+</style>
+</head>
+<body>
+  <section class="stage">
+    <div class="topbar">
+      <div class="brand">HERO<b>TYPE</b> · type-motion generator</div>
+      <div class="stage-actions">
+        <button class="ghost" id="replay">↻ replay</button>
+        <button class="ghost" id="copy">⧉ copy code</button>
+      </div>
+    </div>
+    <div class="canvas" id="canvas">
+      <div class="hero" id="hero">
+        <h1 id="headline">Make it move.</h1>
+        <div class="tag" id="tagline">vibe code festival 2026</div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <div class="field">
+      <h2>Headline</h2>
+      <input type="text" id="text-input" value="Make it move." maxlength="40">
+    </div>
+
+    <div class="field">
+      <h2>Mood → animation (the AI hook)</h2>
+      <div class="mood-row">
+        <input type="text" id="mood-input" placeholder="e.g. ominous, cyberpunk, heavy">
+        <button class="gen" id="generate">Generate</button>
+      </div>
+      <div class="hint" id="mood-hint">Type a vibe. The generator picks an effect, a palette, the timing — and writes a tagline.</div>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div class="field">
+      <h2>Effect</h2>
+      <div class="presets" id="presets"></div>
+    </div>
+
+    <div class="field">
+      <h2>Tuning</h2>
+      <div class="slider">
+        <label>Speed <b id="speed-val">1.0×</b></label>
+        <input type="range" id="speed" min="0.4" max="2.2" step="0.1" value="1">
+      </div>
+      <div class="slider">
+        <label>Stagger <b id="stagger-val">40ms</b></label>
+        <input type="range" id="stagger" min="0" max="120" step="5" value="40">
+      </div>
+      <div class="slider">
+        <label>Scale <b id="scale-val">1.0×</b></label>
+        <input type="range" id="scale" min="0.6" max="1.6" step="0.05" value="1">
+      </div>
+    </div>
+
+    <div class="field">
+      <h2>Palette</h2>
+      <div class="swatches" id="swatches"></div>
+    </div>
+
+    <div class="foot">
+      GSAP 3.12 · CSS · zero build<br>
+      preset-driven · copy-to-clipboard export
+    </div>
+  </aside>
+
+<script>
+/* ---------------------------------------------------------------
+   HEROTYPE — preset-driven typographic hero generator (PoC)
+   GSAP for timelines, hand-rolled char/word splitting (no premium plugin)
+---------------------------------------------------------------- */
+const $ = s => document.querySelector(s);
+const hero = $('#hero'), headline = $('#headline'), tagEl = $('#tagline'), canvas = $('#canvas');
+
+/* ---- PALETTES ---- */
+const palettes = {
+  ember:  {canvas:'#0a0a0c', c1:'#f4f1ea', c2:'#ff5a3c'},
+  cyber:  {canvas:'#05060a', c1:'#e8fbff', c2:'#19d3c5'},
+  neon:   {canvas:'#0c0414', c1:'#fef0ff', c2:'#ff3df2'},
+  cream:  {canvas:'#ece6da', c1:'#1a1a1a', c2:'#b4502d'},
+  ink:    {canvas:'#101418', c1:'#f0f4f8', c2:'#7fd4ff'},
+};
+
+/* ---- PRESETS ----  each defines a font + a GSAP "in" timeline builder ---- */
+const presets = {
+  rise: {
+    name:'Rise', desc:'editorial · clean',
+    font:'"Fraunces"', weight:600, tracking:'-0.02em',
+    build:(units,p)=>{const tl=gsap.timeline();
+      tl.from(units,{yPercent:120,opacity:0,filter:'blur(8px)',
+        duration:.9/p.speed,ease:'power3.out',stagger:p.stagger});
+      return tl;}
+  },
+  kinetic: {
+    name:'Kinetic', desc:'bold · punchy',
+    font:'"Archivo Black"', weight:400, tracking:'-0.03em',
+    build:(units,p)=>{const tl=gsap.timeline();
+      tl.from(units,{scale:0,opacity:0,rotation:()=>gsap.utils.random(-25,25),
+        transformOrigin:'50% 50%',duration:.6/p.speed,ease:'back.out(2.2)',stagger:p.stagger});
+      return tl;}
+  },
+  wave: {
+    name:'Wave', desc:'liquid · calm',
+    font:'"Fraunces"', weight:500, tracking:'-0.01em',
+    build:(units,p)=>{const tl=gsap.timeline();
+      tl.from(units,{yPercent:90,opacity:0,duration:1/p.speed,ease:'sine.out',stagger:p.stagger*1.3})
+        .to(units,{yPercent:-8,duration:1.1/p.speed,ease:'sine.inOut',
+          stagger:{each:p.stagger*1.3,yoyo:true,repeat:-1}}, '>-0.2');
+      return tl;}
+  },
+  glitch: {
+    name:'Glitch', desc:'cyber · heavy',
+    font:'"Space Mono"', weight:700, tracking:'0em',
+    build:(units,p)=>{const tl=gsap.timeline();
+      tl.from(units,{opacity:0,x:()=>gsap.utils.random(-40,40),skewX:30,
+        duration:.4/p.speed,ease:'power4.out',stagger:p.stagger*0.6});
+      units.forEach(u=>{gsap.to(u,{x:()=>gsap.utils.random(-3,3),
+        textShadow:'2px 0 var(--c2), -2px 0 #2af',duration:.08,repeat:-1,repeatRefresh:true,
+        repeatDelay:gsap.utils.random(0.4,2.4),yoyo:true,ease:'none'});});
+      return tl;}
+  },
+  neon: {
+    name:'Neon', desc:'retro · synth',
+    font:'"Bricolage Grotesque"', weight:800, tracking:'-0.01em',
+    build:(units,p)=>{const tl=gsap.timeline();
+      tl.set(units,{textShadow:'0 0 18px var(--c2), 0 0 40px var(--c2)'})
+        .from(units,{opacity:0,duration:.5/p.speed,ease:'power1.in',
+          stagger:{each:p.stagger,from:'random'}})
+        .to(units,{opacity:0.78,duration:.06,repeat:3,yoyo:true,
+          stagger:{each:0.02,from:'random'}},'>-0.1');
+      return tl;}
+  },
+  drop: {
+    name:'Drop', desc:'elastic · playful',
+    font:'"Bricolage Grotesque"', weight:800, tracking:'-0.02em',
+    build:(units,p)=>{const tl=gsap.timeline();
+      tl.from(units,{yPercent:-180,opacity:0,duration:1.1/p.speed,
+        ease:'elastic.out(1,0.45)',stagger:p.stagger});
+      return tl;}
+  },
+};
+
+/* ---- MOOD PARSER: keyword → effect + palette + timing + tagline ---- */
+const moodMap = [
+  {keys:['ominous','dark','cyber','glitch','hack','heavy','dystopia','brutal','danger'],
+   preset:'glitch', palette:'cyber', speed:1.3, tagFmt:['system online','access granted','no signal','enter the grid']},
+  {keys:['neon','retro','80s','synth','vapor','arcade','miami','outrun'],
+   preset:'neon', palette:'neon', speed:1, tagFmt:['after dark','press start','night drive','high score']},
+  {keys:['playful','bouncy','fun','joy','happy','toy','kids','party','energetic'],
+   preset:'drop', palette:'ember', speed:1.1, tagFmt:['let’s play','good times','bounce in','say hi']},
+  {keys:['elegant','luxury','refined','editorial','classy','premium','minimal','calm','sophisticated'],
+   preset:'rise', palette:'cream', speed:0.85, tagFmt:['est. 2026','quietly crafted','in good taste','the fine print']},
+  {keys:['liquid','smooth','organic','flow','wave','water','soft','dream','ambient'],
+   preset:'wave', palette:'ink', speed:0.9, tagFmt:['go with the flow','easy does it','drift in','stay fluid']},
+  {keys:['bold','loud','impact','strong','power','sport','headline','shout','max'],
+   preset:'kinetic', palette:'ember', speed:1.2, tagFmt:['no small talk','go big','full send','make noise']},
+];
+const moodChips = ['ominous, cyberpunk','playful & bouncy','elegant editorial','liquid & calm','retro neon','bold impact'];
+
+/* ---- STATE ---- */
+let state = {preset:'rise', palette:'ember', speed:1, stagger:0.04, scale:1};
+let activeTl = null;
+
+/* ---- SPLIT: wrap each char in .u, keep words intact for wrapping ---- */
+function splitText(el, text){
+  el.innerHTML='';
+  text.split(' ').forEach((word,wi,arr)=>{
+    const w=document.createElement('span'); w.className='word';
+    [...word].forEach(ch=>{
+      const s=document.createElement('span'); s.className='u'; s.textContent=ch; w.appendChild(s);
+    });
+    el.appendChild(w);
+    if(wi<arr.length-1){const sp=document.createElement('span');sp.className='space u';sp.innerHTML='&nbsp;';el.appendChild(sp);}
+  });
+  return [...el.querySelectorAll('.u')];
+}
+
+/* ---- APPLY palette ---- */
+function applyPalette(name){
+  const p=palettes[name]; if(!p) return;
+  canvas.style.setProperty('--canvas',p.canvas);
+  document.documentElement.style.setProperty('--c1',p.c1);
+  document.documentElement.style.setProperty('--c2',p.c2);
+  state.palette=name;
+  document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('active',s.dataset.p===name));
+}
+
+/* ---- PLAY current preset ---- */
+function play(){
+  if(activeTl) activeTl.kill();
+  gsap.killTweensOf('.u');
+  const def=presets[state.preset];
+  headline.style.fontFamily=def.font;
+  headline.style.fontWeight=def.weight;
+  headline.style.letterSpacing=def.tracking;
+  hero.style.setProperty('transform',`scale(${state.scale})`);
+  const units=splitText(headline, headline.dataset.text || headline.textContent);
+  const params={speed:state.speed, stagger:state.stagger};
+  activeTl=def.build(units,params);
+  // tagline reveal
+  gsap.fromTo(tagEl,{opacity:0,y:10},{opacity:.9,y:0,duration:.6,delay:.4,ease:'power2.out'});
+  document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.k===state.preset));
+}
+
+/* ---- MOOD → settings ---- */
+function generate(raw){
+  const q=(raw||'').toLowerCase();
+  let hit=null,score=0;
+  moodMap.forEach(m=>{const s=m.keys.filter(k=>q.includes(k)).length; if(s>score){score=s;hit=m;}});
+  if(!hit) hit=moodMap[Math.floor(Math.random()*moodMap.length)];
+  state.preset=hit.preset; state.speed=hit.speed;
+  $('#speed').value=hit.speed; $('#speed-val').textContent=hit.speed.toFixed(1)+'×';
+  applyPalette(hit.palette);
+  const tag=hit.tagFmt[Math.floor(Math.random()*hit.tagFmt.length)];
+  tagEl.textContent=tag;
+  $('#mood-hint').innerHTML=`→ <b style="color:var(--ink)">${presets[hit.preset].name}</b> effect · <b style="color:var(--ink)">${hit.palette}</b> palette · tagline “${tag}”`;
+  play();
+}
+
+/* ---- BUILD UI ---- */
+// presets
+const pc=$('#presets');
+Object.entries(presets).forEach(([k,v])=>{
+  const b=document.createElement('button'); b.className='preset'; b.dataset.k=k;
+  b.innerHTML=`<div class="pname">${v.name}</div><div class="pdesc">${v.desc}</div>`;
+  b.onclick=()=>{state.preset=k; play();}; pc.appendChild(b);
+});
+// swatches
+const sc=$('#swatches');
+Object.entries(palettes).forEach(([k,v])=>{
+  const s=document.createElement('div'); s.className='sw'; s.dataset.p=k;
+  s.style.background=`linear-gradient(135deg,${v.c1} 0 50%,${v.c2} 50% 100%)`;
+  s.title=k; s.onclick=()=>{applyPalette(k); play();}; sc.appendChild(s);
+});
+// mood chips
+const cc=$('#chips');
+moodChips.forEach(m=>{const c=document.createElement('button');c.className='chip';c.textContent=m;
+  c.onclick=()=>{$('#mood-input').value=m; generate(m);}; cc.appendChild(c);});
+
+/* ---- EVENTS ---- */
+$('#text-input').addEventListener('input',e=>{
+  headline.dataset.text=e.target.value||' '; headline.textContent=e.target.value; play();});
+$('#mood-input').addEventListener('keydown',e=>{if(e.key==='Enter') generate(e.target.value);});
+$('#generate').onclick=()=>generate($('#mood-input').value);
+$('#replay').onclick=play;
+$('#speed').oninput=e=>{state.speed=+e.target.value;$('#speed-val').textContent=state.speed.toFixed(1)+'×';};
+$('#stagger').oninput=e=>{state.stagger=+e.target.value/1000;$('#stagger-val').textContent=e.target.value+'ms';};
+$('#scale').oninput=e=>{state.scale=+e.target.value;$('#scale-val').textContent=state.scale.toFixed(1)+'×';play();};
+
+/* ---- COPY CODE (self-contained snippet stub) ---- */
+$('#copy').onclick=()=>{
+  const def=presets[state.preset], p=palettes[state.palette];
+  const snippet=`<!-- HEROTYPE export · ${def.name} -->
+<div class="hero" style="background:${p.canvas};color:${p.c1};font-family:${def.font};text-align:center;padding:8vmin">
+  <h1 style="font-size:clamp(3rem,9vw,8rem);font-weight:${def.weight};letter-spacing:${def.tracking}">${headline.textContent}</h1>
+  <p style="color:${p.c2};font-family:monospace;letter-spacing:.28em;text-transform:uppercase">${tagEl.textContent}</p>
+</div>
+<!-- TODO: ship the matching GSAP timeline (preset "${state.preset}", speed ${state.speed}, stagger ${state.stagger*1000}ms) -->`;
+  navigator.clipboard?.writeText(snippet);
+  const btn=$('#copy'); const o=btn.textContent; btn.textContent='✓ copied'; setTimeout(()=>btn.textContent=o,1400);
+};
+
+/* ---- INIT ---- */
+headline.dataset.text='Make it move.';
+applyPalette('ember');
+window.addEventListener('load',()=>setTimeout(play,150));
+</script>
+</body>
+</html>
