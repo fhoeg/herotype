@@ -7,6 +7,10 @@ node_modules
 dist
 dist-ssr
 *.local
+*.tsbuildinfo
+
+# local scratch / export tests
+_test/
 
 # logs
 logs
