@@ -133,7 +133,7 @@ export function ControlPanel({
           style={{ fontFamily: state.font ? `"${state.font}", inherit` : 'inherit' }}
           onChange={(e) => setFont(e.target.value)}
         >
-          <option value="">Preset default</option>
+          <option value="">Default (Fraunces)</option>
           {googleFonts.map((f) => (
             <option
               key={f}

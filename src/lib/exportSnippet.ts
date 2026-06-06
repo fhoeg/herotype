@@ -1,4 +1,5 @@
 import { presets } from './presets'
+import { DEFAULT_FONT } from './fonts'
 import type { HeroState } from './types'
 
 /**
@@ -9,7 +10,7 @@ import type { HeroState } from './types'
 export function buildSnippet(state: HeroState): string {
   const def = presets[state.preset]
   const c = state.colors
-  const font = state.font ? `"${state.font}", ${def.font}` : def.font
+  const font = `"${state.font || DEFAULT_FONT}", serif`
   return `<!-- HEROTYPE export · ${def.name} -->
 <div class="hero" style="background:${c.canvas};color:${c.c1};font-family:${font};text-align:center;padding:8vmin">
   <h1 style="font-size:clamp(3rem,9vw,8rem);font-weight:${state.weight || def.weight};letter-spacing:${def.tracking}">${state.headline}</h1>

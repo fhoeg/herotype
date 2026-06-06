@@ -30,14 +30,6 @@ async function gotoApp(page: Page) {
 /** Count of char units (excludes the inter-word .space units). */
 const charUnits = (page: Page) => page.locator('.u:not(.space)')
 
-const PRESET_FONT: Record<string, string> = {
-  rise: 'Fraunces',
-  kinetic: 'Archivo Black',
-  wave: 'Fraunces',
-  glitch: 'Space Mono',
-  neon: 'Bricolage Grotesque',
-  drop: 'Bricolage Grotesque',
-}
 const NEON_TAGLINES = ['after dark', 'press start', 'night drive', 'high score']
 
 // ---------------------------------------------------------------------------
@@ -113,20 +105,15 @@ test('V6 — copy writes a snippet of the current state and confirms', async ({ 
 })
 
 // ---------------------------------------------------------------------------
-// V2 — six visibly distinct presets (+ font + loop-stack guard)
+// V2 — six visibly distinct presets (+ loop-stack guard). Font is independent
+// of the effect now, so this no longer asserts a per-preset typeface.
 // ---------------------------------------------------------------------------
-test('V2 — each preset activates, applies its font, and does not stack', async ({ page, errors }) => {
+test('V2 — each preset activates and does not stack', async ({ page, errors }) => {
   await gotoApp(page)
 
-  for (const [key, font] of Object.entries(PRESET_FONT)) {
+  for (const key of ['rise', 'kinetic', 'wave', 'glitch', 'neon', 'drop']) {
     await page.locator(`.preset[data-preset="${key}"]`).click()
     await expect(page.locator(`.preset[data-preset="${key}"]`)).toHaveClass(/active/)
-
-    const family = await page
-      .getByTestId('headline')
-      .evaluate((el) => getComputedStyle(el).fontFamily)
-    expect(family).toContain(font)
-
     await page.waitForTimeout(250) // let the in-animation settle for the shot
     await page.screenshot({ path: `${SHOTS}/preset-${key}.png` })
   }
@@ -134,6 +121,23 @@ test('V2 — each preset activates, applies its font, and does not stack', async
   // rapid re-switch: looping effects (wave/glitch/neon) must not pile up / error
   for (const key of ['wave', 'glitch', 'neon', 'wave', 'glitch', 'neon']) {
     await page.locator(`.preset[data-preset="${key}"]`).click()
+  }
+  expect(errors).toEqual([])
+})
+
+// Font is independent of the effect: switching presets must NOT change the typeface.
+test('Font does not change when the effect changes', async ({ page, errors }) => {
+  await gotoApp(page)
+  const familyOf = () =>
+    page.getByTestId('headline').evaluate((el) => getComputedStyle(el).fontFamily)
+
+  await page.getByTestId('font-select').selectOption('Anton')
+  const before = await familyOf()
+  expect(before).toContain('Anton')
+
+  for (const key of ['kinetic', 'glitch', 'wave', 'drop', 'rise']) {
+    await page.locator(`.preset[data-preset="${key}"]`).click()
+    expect(await familyOf()).toBe(before) // unchanged by the effect switch
   }
   expect(errors).toEqual([])
 })
@@ -207,9 +211,9 @@ test('F1–F6 — font override applies, reverts, loads on demand, exports, stic
   await gotoApp(page)
   const select = page.getByTestId('font-select')
 
-  // F1 — default is "Preset default" → the active preset's font (rise = Fraunces)
+  // F1 — default value renders the app default font (Fraunces), preset-independent
   await expect(select).toHaveValue('')
-  await expect(select.locator('option').first()).toHaveText('Preset default')
+  await expect(select.locator('option').first()).toHaveText('Default (Fraunces)')
   expect(await fontFamilyOf(page)).toContain('Fraunces')
 
   // F4 — curated, distinct list (serif / display / mono represented)
@@ -218,11 +222,10 @@ test('F1–F6 — font override applies, reverts, loads on demand, exports, stic
     await expect(select.locator('option', { hasText: f })).toHaveCount(1)
   }
 
-  // F2 — choosing a font applies live, keeping the preset font as fallback
+  // F2 — choosing a font applies live
   await select.selectOption('Anton')
-  let family = await fontFamilyOf(page)
+  const family = await fontFamilyOf(page)
   expect(family).toContain('Anton')
-  expect(family).toContain('Fraunces') // preset fallback retained
 
   // F3 — the face is fetched on demand (a Google Fonts <link> appears)
   await expect(page.locator('head link[href*="Anton"]')).toHaveCount(1)

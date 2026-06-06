@@ -1,9 +1,21 @@
 /**
- * Curated Google Fonts offered in the font picker. The empty value means
- * "use the active preset's own font" (the default look). Everything else is
- * an override that's loaded on demand via {@link loadGoogleFont}.
+ * The default headline typeface. The font is independent of the effect — it is
+ * NOT derived from the active preset — so switching effects never changes it.
+ * The empty picker value ('') resolves to this.
+ */
+export const DEFAULT_FONT = 'Fraunces'
+
+/**
+ * Curated fonts offered in the font picker. The empty value means
+ * "use {@link DEFAULT_FONT}" (preset-independent). Everything else is an
+ * override loaded on demand via {@link loadGoogleFont}. The first group are the
+ * presets' original personality faces, kept selectable now that they no longer
+ * apply automatically per effect.
  */
 export const googleFonts = [
+  'Bricolage Grotesque',
+  'Archivo Black',
+  'Space Mono',
   'Inter',
   'Poppins',
   'Montserrat',

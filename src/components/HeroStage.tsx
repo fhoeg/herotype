@@ -2,7 +2,8 @@ import { useRef, useState, useEffect, Fragment } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { presets } from '../lib/presets'
-import { fontFileUrl, familyName, BUNDLED_FALLBACK } from '../lib/fontFiles'
+import { DEFAULT_FONT } from '../lib/fonts'
+import { fontFileUrl, BUNDLED_FALLBACK } from '../lib/fontFiles'
 import type { HeroState } from '../lib/types'
 
 gsap.registerPlugin(useGSAP)
@@ -117,9 +118,7 @@ function SpansStage({ state, runId }: Props) {
         <h1
           data-testid="headline"
           style={{
-            fontFamily: state.font
-              ? `"${state.font}", ${def.font}, serif`
-              : `${def.font}, serif`,
+            fontFamily: `"${state.font || DEFAULT_FONT}", serif`,
             fontWeight: state.weight || def.weight,
             letterSpacing: def.tracking,
           }}
@@ -162,7 +161,6 @@ type Glyphs = { ds: string[]; width: number; height: number }
  */
 function DrawStage({ state, runId }: Props) {
   const scope = useRef<HTMLDivElement>(null)
-  const def = presets[state.preset]
   const [glyphs, setGlyphs] = useState<Glyphs | null>(null)
 
   // Load the font binary + compute glyph outlines whenever the text changes.
@@ -180,7 +178,7 @@ function DrawStage({ state, runId }: Props) {
         // Resolve the family: an explicit picker font, else the draw preset's
         // own face. Try its jsDelivr .woff; on any fetch/parse failure fall back
         // to the bundled face so the headline always draws.
-        const family = state.font || familyName(def.font)
+        const family = state.font || DEFAULT_FONT
         const parse = async (url: string) => {
           const r = await fetch(url)
           if (!r.ok) throw new Error(`font ${r.status}`)
