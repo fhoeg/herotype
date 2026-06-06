@@ -120,7 +120,7 @@ function SpansStage({ state, runId }: Props) {
             fontFamily: state.font
               ? `"${state.font}", ${def.font}, serif`
               : `${def.font}, serif`,
-            fontWeight: def.weight,
+            fontWeight: state.weight || def.weight,
             letterSpacing: def.tracking,
           }}
         >

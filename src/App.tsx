@@ -13,6 +13,7 @@ const INITIAL: HeroState = {
   tagline: 'vibe code festival 2026',
   preset: 'rise',
   font: '',
+  weight: 0,
   palette: 'ember',
   colors: { ...palettes.ember },
   drawFill: true,
@@ -99,6 +100,7 @@ export default function App() {
           replay()
         }}
         setFont={(font) => patch({ font })}
+        setWeight={(weight) => patch({ weight })}
         setDrawFill={(drawFill) => patch({ drawFill })}
         setPalette={(palette) => {
           patch({ palette, colors: { ...palettes[palette] } })

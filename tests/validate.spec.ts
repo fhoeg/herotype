@@ -388,3 +388,27 @@ test('Sub line is editable and alignment switches left/center/right', async ({ p
 
   expect(errors).toEqual([])
 })
+
+// ---------------------------------------------------------------------------
+// Font weight selector
+// ---------------------------------------------------------------------------
+test('Weight selector overrides the preset font-weight and reverts', async ({ page, errors }) => {
+  await gotoApp(page)
+
+  const weightOf = () =>
+    page.getByTestId('headline').evaluate((el) => getComputedStyle(el).fontWeight)
+
+  // default rise preset weight is 600
+  await expect(page.getByTestId('weight-select')).toHaveValue('0')
+  expect(await weightOf()).toBe('600')
+
+  // override → 900
+  await page.getByTestId('weight-select').selectOption('900')
+  expect(await weightOf()).toBe('900')
+
+  // revert → preset default (600)
+  await page.getByTestId('weight-select').selectOption('0')
+  expect(await weightOf()).toBe('600')
+
+  expect(errors).toEqual([])
+})

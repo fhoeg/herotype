@@ -13,6 +13,7 @@ type Props = {
   generate: (mood: string) => void
   setPreset: (key: string) => void
   setFont: (family: string) => void
+  setWeight: (w: number) => void
   setDrawFill: (fill: boolean) => void
   setPalette: (key: string) => void
   setColor: (channel: 'canvas' | 'c1' | 'c2' | 'c3', value: string) => void
@@ -31,6 +32,7 @@ export function ControlPanel({
   generate,
   setPreset,
   setFont,
+  setWeight,
   setDrawFill,
   setPalette,
   setColor,
@@ -123,23 +125,6 @@ export function ControlPanel({
       </div>
 
       <div className="field">
-        <h2>Effect</h2>
-        <div className="presets">
-          {Object.values(presets).map((p) => (
-            <button
-              key={p.key}
-              className={`preset${state.preset === p.key ? ' active' : ''}`}
-              data-preset={p.key}
-              onClick={() => setPreset(p.key)}
-            >
-              <div className="pname">{p.name}</div>
-              <div className="pdesc">{p.desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="field">
         <h2>Font</h2>
         <select
           className="font-select"
@@ -160,6 +145,40 @@ export function ControlPanel({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="field">
+        <h2>Weight</h2>
+        <select
+          className="font-select"
+          data-testid="weight-select"
+          value={state.weight}
+          onChange={(e) => setWeight(+e.target.value)}
+        >
+          <option value={0}>Preset default</option>
+          {[300, 400, 500, 600, 700, 800, 900].map((w) => (
+            <option key={w} value={w} style={{ fontWeight: w }}>
+              {w}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="field">
+        <h2>Effect</h2>
+        <div className="presets">
+          {Object.values(presets).map((p) => (
+            <button
+              key={p.key}
+              className={`preset${state.preset === p.key ? ' active' : ''}`}
+              data-preset={p.key}
+              onClick={() => setPreset(p.key)}
+            >
+              <div className="pname">{p.name}</div>
+              <div className="pdesc">{p.desc}</div>
+            </button>
+          ))}
+        </div>
       </div>
 
       {presets[state.preset].kind === 'draw' && (
