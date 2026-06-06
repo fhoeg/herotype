@@ -15,6 +15,7 @@ const INITIAL: HeroState = {
   font: '',
   palette: 'ember',
   colors: { ...palettes.ember },
+  drawFill: true,
   speed: 1,
   stagger: 0.04,
   scale: 1,

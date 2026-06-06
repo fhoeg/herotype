@@ -26,6 +26,13 @@ export type Preset = {
   font: string
   weight: number
   tracking: string
+  /**
+   * Rendering mode. `'spans'` (default, omittable) animates the per-character
+   * `.u` spans via `build`. `'draw'` ignores `build` and instead renders SVG
+   * glyph outlines that the stage strokes on — the sanctioned rendering-branch
+   * extension this contract anticipates (cf. the post-hackathon 3D path).
+   */
+  kind?: 'spans' | 'draw'
   build: (units: HTMLElement[], p: Params) => gsap.core.Timeline
 }
 
@@ -59,6 +66,8 @@ export type HeroState = {
   palette: string
   /** The actual colours rendered + exported. Source of truth (a palette just seeds these). */
   colors: { canvas: string; c1: string; c2: string; c3: string }
+  /** Draw effect end-state: true = fill glyphs solid after stroking on; false = leave outline-only. */
+  drawFill: boolean
   speed: number
   /** seconds */
   stagger: number

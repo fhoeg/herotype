@@ -135,6 +135,18 @@ body {
   color: var(--c2);
   opacity: 0;
 }
+/* draw effect: SVG glyph outlines sized like the headline */
+.draw-svg {
+  display: block;
+  height: clamp(3rem, 13vw, 9rem);
+  width: auto;
+  max-width: 88vw;
+  overflow: visible;
+}
+.draw-svg .glyph {
+  will-change: stroke-dashoffset, fill-opacity;
+}
+
 /* split unit */
 .u {
   display: inline-block;

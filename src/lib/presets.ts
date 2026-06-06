@@ -164,6 +164,22 @@ export const presets: Record<string, Preset> = {
       return tl
     },
   },
+
+  draw: {
+    key: 'draw',
+    name: 'Draw',
+    desc: 'ink · outline',
+    // Default face for the draw effect; bundled locally so it's always
+    // parseable (the picker can override it — see HeroStage's draw branch).
+    font: '"Anton"',
+    weight: 400,
+    tracking: '-0.01em',
+    kind: 'draw',
+    // `kind:'draw'` renders SVG glyph outlines in HeroStage instead of running
+    // over the `.u` spans; this builder is never called. Kept as a no-op so the
+    // Preset shape stays uniform.
+    build: () => gsap.timeline(),
+  },
 }
 
 export const presetKeys = Object.keys(presets)
