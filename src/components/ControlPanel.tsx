@@ -12,6 +12,7 @@ type Props = {
   setPreset: (key: string) => void
   setFont: (family: string) => void
   setPalette: (key: string) => void
+  setColor: (channel: 'canvas' | 'c1' | 'c2' | 'c3', value: string) => void
   setSpeed: (v: number) => void
   setStagger: (v: number) => void
   setScale: (v: number) => void
@@ -26,6 +27,7 @@ export function ControlPanel({
   setPreset,
   setFont,
   setPalette,
+  setColor,
   setSpeed,
   setStagger,
   setScale,
@@ -174,7 +176,10 @@ export function ControlPanel({
       </div>
 
       <div className="field">
-        <h2>Palette</h2>
+        <h2>
+          Palette{' '}
+          {state.palette === '' && <span className="custom-tag">custom</span>}
+        </h2>
         <div className="swatches">
           {Object.entries(palettes).map(([k, v]) => (
             <div
@@ -188,6 +193,44 @@ export function ControlPanel({
               onClick={() => setPalette(k)}
             />
           ))}
+        </div>
+        <div className="colors">
+          <label className="color-row">
+            <span>Font</span>
+            <input
+              type="color"
+              data-testid="font-color"
+              value={state.colors.c1}
+              onChange={(e) => setColor('c1', e.target.value)}
+            />
+          </label>
+          <label className="color-row">
+            <span>Effect 1</span>
+            <input
+              type="color"
+              data-testid="effect-color-1"
+              value={state.colors.c2}
+              onChange={(e) => setColor('c2', e.target.value)}
+            />
+          </label>
+          <label className="color-row">
+            <span>Effect 2</span>
+            <input
+              type="color"
+              data-testid="effect-color-2"
+              value={state.colors.c3}
+              onChange={(e) => setColor('c3', e.target.value)}
+            />
+          </label>
+          <label className="color-row">
+            <span>Background</span>
+            <input
+              type="color"
+              data-testid="bg-color"
+              value={state.colors.canvas}
+              onChange={(e) => setColor('canvas', e.target.value)}
+            />
+          </label>
         </div>
       </div>
 

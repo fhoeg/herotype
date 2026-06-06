@@ -243,3 +243,63 @@ test('F1–F6 — font override applies, reverts, loads on demand, exports, stic
 
   expect(errors).toEqual([])
 })
+
+// ---------------------------------------------------------------------------
+// C1–C6 — selectable colors
+// ---------------------------------------------------------------------------
+const cssVars = (page: Page) =>
+  page.evaluate(() => {
+    const s = getComputedStyle(document.documentElement)
+    return {
+      canvas: s.getPropertyValue('--canvas').trim(),
+      c1: s.getPropertyValue('--c1').trim(),
+      c2: s.getPropertyValue('--c2').trim(),
+      c3: s.getPropertyValue('--c3').trim(),
+    }
+  })
+
+test('C1–C6 — colors are selectable, seed from palettes, go custom, and export', async ({
+  page,
+  errors,
+}) => {
+  await gotoApp(page)
+
+  // C1 — four colour inputs present with hex values
+  for (const id of ['font-color', 'effect-color-1', 'effect-color-2', 'bg-color']) {
+    await expect(page.getByTestId(id)).toHaveValue(/^#[0-9a-f]{6}$/)
+  }
+
+  // C6 — default load is the ember palette (no regression)
+  expect((await cssVars(page)).c1).toBe('#f4f1ea')
+
+  // C2 — a palette seeds all pickers and marks itself active
+  await page.locator('.sw[data-palette="ink"]').click()
+  await expect(page.getByTestId('font-color')).toHaveValue('#f0f4f8')
+  await expect(page.locator('.sw[data-palette="ink"]')).toHaveClass(/active/)
+
+  // C2 (cont) — tweaking a channel → "Custom" (no swatch active)
+  await page.getByTestId('font-color').fill('#00ff88')
+  await expect(page.locator('.sw.active')).toHaveCount(0)
+  await expect(page.locator('.custom-tag')).toBeVisible()
+  expect((await cssVars(page)).c1).toBe('#00ff88')
+
+  // C3 — live recolour of background and effect 1
+  await page.getByTestId('bg-color').fill('#123456')
+  expect((await cssVars(page)).canvas).toBe('#123456')
+  await page.getByTestId('effect-color-1').fill('#abcdef')
+  expect((await cssVars(page)).c2).toBe('#abcdef')
+
+  // C4 — second accent (--c3) is wired (assert the var; the live Glitch tween
+  // colour is a screenshot/eyeball concern)
+  await page.locator('.preset[data-preset="glitch"]').click()
+  await page.getByTestId('effect-color-2').fill('#00ffff')
+  expect((await cssVars(page)).c3).toBe('#00ffff')
+
+  // C5 — export reflects the actual colours on screen
+  await page.getByTestId('copy').click()
+  const clip = await page.evaluate(() => navigator.clipboard.readText())
+  expect(clip).toContain('#123456') // background
+  expect(clip).toContain('#00ffff') // secondary accent
+
+  expect(errors).toEqual([])
+})

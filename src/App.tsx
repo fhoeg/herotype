@@ -14,6 +14,7 @@ const INITIAL: HeroState = {
   preset: 'rise',
   font: '',
   palette: 'ember',
+  colors: { ...palettes.ember },
   speed: 1,
   stagger: 0.04,
   scale: 1,
@@ -29,15 +30,10 @@ export default function App() {
     tagline: string
   } | null>(null)
 
-  // Drive palette onto CSS variables. --c1/--c2/--canvas cascade from :root.
-  useEffect(() => {
-    const p = palettes[state.palette]
-    if (!p) return
-    const root = document.documentElement.style
-    root.setProperty('--canvas', p.canvas)
-    root.setProperty('--c1', p.c1)
-    root.setProperty('--c2', p.c2)
-  }, [state.palette])
+  // CSS variables (--canvas/--c1/--c2/--c3) are applied inside HeroStage right
+  // before the timeline builds, so baked-colour effects (Glitch/Neon) always
+  // read fresh values. (Doing it here in a parent effect runs too late — child
+  // effects flush first.)
 
   // Lazily pull in the selected Google Font (no-op for preset default).
   useEffect(() => {
@@ -49,7 +45,13 @@ export default function App() {
 
   const generate = (mood: string) => {
     const r = parseMood(mood)
-    patch({ preset: r.preset, palette: r.palette, speed: r.speed, tagline: r.tagline })
+    patch({
+      preset: r.preset,
+      palette: r.palette,
+      colors: { ...palettes[r.palette] },
+      speed: r.speed,
+      tagline: r.tagline,
+    })
     setLastMood({
       presetName: presets[r.preset].name,
       palette: r.palette,
@@ -94,7 +96,15 @@ export default function App() {
         }}
         setFont={(font) => patch({ font })}
         setPalette={(palette) => {
-          patch({ palette })
+          patch({ palette, colors: { ...palettes[palette] } })
+          replay()
+        }}
+        setColor={(channel, value) => {
+          setState((s) => ({
+            ...s,
+            palette: '', // diverged from any preset → "Custom"
+            colors: { ...s.colors, [channel]: value },
+          }))
           replay()
         }}
         setSpeed={(speed) => patch({ speed })}

@@ -29,11 +29,15 @@ export type Preset = {
   build: (units: HTMLElement[], p: Params) => gsap.core.Timeline
 }
 
-/** A palette is three CSS-variable values driven onto the stage. */
+/** A palette is a set of CSS-variable values driven onto the stage. */
 export type Palette = {
   canvas: string
+  /** font / headline colour → --c1 */
   c1: string
+  /** primary effect / accent colour → --c2 */
   c2: string
+  /** secondary effect accent → --c3 (e.g. Glitch's 2nd shadow channel) */
+  c3: string
 }
 
 /** Result of parsing a free-text mood phrase. */
@@ -51,7 +55,10 @@ export type HeroState = {
   preset: string
   /** Google Font override; '' = use the active preset's own font. */
   font: string
+  /** Active palette key for the swatch highlight; '' once a colour is tweaked ("Custom"). */
   palette: string
+  /** The actual colours rendered + exported. Source of truth (a palette just seeds these). */
+  colors: { canvas: string; c1: string; c2: string; c3: string }
   speed: number
   /** seconds */
   stagger: number

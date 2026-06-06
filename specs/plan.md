@@ -154,3 +154,169 @@ quality stays a screenshot/eyeball concern, consistent with the V-suite.
 If time is short, ship **F2 (apply+revert) + F5 (export) + F6 (sticky)** — the
 user-visible heart of the feature — and eyeball F1/F3/F4. The F2 one-line fix is
 not optional (it's a spec conformance gap), but it's trivial.
+
+---
+
+# Plan — Draw-on effect (D1–D6)
+
+Maps the spec's *Draw-on effect (self-drawing outlines)* section onto the code.
+A 7th effect, **"Draw"**, that renders the headline as real glyph outlines
+(via `opentype.js`) and animates each character's stroke on (manual
+dash-offset, GSAP core). It is the first preset that **does not** run over the
+`.u` spans — so it uses the `Preset` contract's sanctioned rendering-branch
+extension (a `kind` flag), exactly parallel to the documented `kind:'3d'` path.
+
+## The contract extension (keeps the invariant intact)
+- Add optional `Preset.kind?: 'spans' | 'draw'` (default `'spans'`). The six
+  existing presets stay `'spans'` and are **untouched**; their `(units, params)
+  → timeline` contract is unchanged.
+- `HeroStage` branches on `def.kind`: `'spans'` → today's split-text + `useGSAP`
+  path; `'draw'` → the new SVG path renderer. This is the **one-time** component
+  change the spec's decision #3 accepts; adding *future* span-presets still never
+  touches component code.
+
+## Module map (new + changed)
+| Concern | File | Change |
+|---|---|---|
+| New effect entry | `src/lib/presets.ts` | Add `draw` Preset: `{ key:'draw', name:'Draw', desc:'ink · outline', kind:'draw', font:'"Anton"', weight:400, tracking:'-0.01em', build: () => gsap.timeline() }`. `build` is a no-op stub (HeroStage drives the SVG); kept so the type/array stay uniform. |
+| Type extensions | `src/lib/types.ts` | `Preset.kind?: 'spans' \| 'draw'`; `HeroState.drawFill: boolean` (true = fill solid after draw, false = outline-only end state, D4). |
+| Font-binary resolver | `src/lib/fontFiles.ts` **(new)** | `fontFileUrl(family): string` → jsDelivr `@fontsource` **`.woff`** URL (opentype-parseable; **not** `.woff2`), derived from the family (kebab id, `latin`, weight `400`), with a `FONT_FILE_OVERRIDES` map for non-conforming faces and a bundled-fallback constant. |
+| Bundled fallback face | `public/fonts/anton.ttf` **(new asset)** | One guaranteed-parseable TTF so the effect never blanks if a fetch/parse fails. |
+| SVG draw renderer + draw timeline | `src/components/HeroStage.tsx` | New `kind==='draw'` branch: async-load the font, compute per-glyph `<path d>` + `viewBox`/baseline, render an `<svg>` of `<path fill="none" stroke="var(--c1)">`, then a `useGSAP` timeline tweens each path's `strokeDashoffset: len→0` with `stagger` (Speed/Stagger feed it like other presets); on completion, tween `fill-opacity 0→1` iff `drawFill`. Scope revert handles cleanup. |
+| Fill/outline toggle | `src/components/ControlPanel.tsx` | A small two-state toggle (`data-testid="draw-fill"`) rendered **only** when the active preset's `kind==='draw'`; calls `setDrawFill`. |
+| Wiring | `src/App.tsx` | `drawFill` in `INITIAL` (default `true`); `setDrawFill` passed to both components. Existing `setPreset`/`generate`/`setFont` unchanged. |
+| Export | `src/lib/exportSnippet.ts` | *(Optional, last)* for the draw preset emit an outlined-text note in the stub; otherwise leave as-is. Low priority — export stays a stub. |
+
+## State / data flow for the draw branch
+`[state.preset, state.font, state.headline]` → **load effect**: resolve family
+(`state.font || def.font`) → `fontFileUrl` → `await import('opentype.js')` +
+`opentype.load(url)` → `font.getPaths(text, …)` → set `glyphs:{d}[]` + `box` in
+local state. **Draw effect** (`useGSAP`, scope = the SVG wrapper, deps
+`[glyphs, speed, stagger, drawFill, runId]`): set each path's
+`strokeDasharray/Offset` from `getTotalLength()`, tween offset→0 staggered, then
+fill if `drawFill`. Loading shows nothing (or the prior frame) — no crash on
+empty headline (guard `glyphs.length`).
+
+> **Lazy-load `opentype.js`** via dynamic `import()` inside the load effect, so
+> it ships in a separate chunk and the core-loop bundle/first-paint stays fast.
+
+## New dependencies — justification
+- **`opentype.js`** (runtime). The constitution's LOCKED list bans *premium GSAP
+  plugins, three.js, shaders/WebGL* — a font-parsing library is none of these,
+  and the draw animation itself is **GSAP core only** (dash-offset). This is the
+  route the spec's decision #1 explicitly chose. Dynamically imported, so it is
+  off the initial-load critical path.
+- **`@types/opentype.js`** (devDependency) if the package's bundled types are
+  insufficient.
+- No DrawSVG, no SplitText, no WebGL. The bundled `.ttf` is a static asset.
+
+## Risks & mitigations
+- **WOFF2 unparseable (the flagged risk).** Google's `gstatic` serves `.woff2`,
+  which opentype.js can't decode. → Fetch **`.woff`** from jsDelivr `@fontsource`
+  (CORS `*`, opentype-parseable). Per-family URL is deterministic; exceptions go
+  in `FONT_FILE_OVERRIDES`. If fetch/parse throws → fall back to the bundled
+  `anton.ttf`, so the headline always draws (in the fallback face). **This is the
+  one risk that can sink the chosen route — derisk it first (see tasks).**
+- **Async load race / FOUT-equivalent.** Guard on a `glyphs` ready-state; revert
+  the prior SVG before rendering new paths; `useGSAP` scope revert kills stale
+  dash tweens.
+- **Variable fonts / missing weight 400 on fontsource** → override map + bundled
+  fallback cover it.
+- **Sizing parity** with span presets (centering, responsive type) → size the
+  `<svg>` by `viewBox` + CSS `max-width`/clamp; visual parity is approximate and
+  acceptable (no pixel assertions, per the V-suite convention).
+- **Bundle weight** → dynamic import keeps `opentype.js` out of the main chunk.
+
+## Harness extension
+Add tests to `tests/validate.spec.ts` (no new file, no new dep):
+| Crit | Assertion |
+|---|---|
+| D1 | Select "Draw" → an `<svg>` with `path[stroke]` renders in the stage (distinct from `.u` spans); screenshot for the motion eyeball. |
+| D2 | Pick font `Pacifico` with Draw active → the rendered `<path>` `d` changes vs. default face (proves it follows the font); edit headline → path count tracks the new char count. |
+| D3 | Raise Stagger → assert the readout label; motion pacing is a screenshot eyeball. |
+| D4 | Toggle `draw-fill` → assert paths' `fill-opacity` (or `fill`) flips between drawn-solid and outline-only. |
+| D5 | Replay with Draw active → no `console.error`; switch to `rise` and back → exactly one `<svg>`, no orphaned paths. Empty headline → no crash. |
+| D6 | Assert path `stroke` resolves to the palette `--c1`/`--c2` var; switch palette → stroke recolours. |
+
+## Smallest version that still closes the loop
+The whole feature is **additive** — the core loop and the existing 6 presets +
+font picker are untouched, so "Draw" can be cut entirely without harming the
+demo (it sits *below* the constitution cut-list, which only trims down to 4
+presets). Build it in escalating slices:
+1. **MVP draw** — "Draw" renders + animates using the **bundled `anton.ttf`
+   only** (ignore the picker), fill end-state, paced by Speed/Stagger,
+   palette-coloured, clean replay. Satisfies D1, D3, D5, D6 and a reduced D2/D4.
+2. **+ Follow the font** — per-family fetch via `fontFiles.ts` (full D2).
+3. **+ Fill/outline toggle** — `drawFill` UI (full D4).
+Ship 1, then 2, then 3; stop wherever time runs out. **Derisk WOFF2 first** — if
+no parseable font source works in-browser within the spike, fall back to the
+bundled-font-only MVP (slice 1) and note that D2's font-following is deferred.
+
+---
+
+# Plan — Selectable colors (C1–C6)
+
+Make the 5-palette row tunable: four color inputs (font / effect 1 / effect 2 /
+background), palettes seed them, a tweak goes "Custom". Adds a secondary accent
+`--c3` (Glitch's currently-hardcoded blue).
+
+## State model (the key decision)
+`HeroState` becomes color-driven instead of palette-key-driven:
+- **Add** `colors: { canvas; c1; c2; c3 }` — the **source of truth** for
+  rendering and export.
+- **Keep** `palette: string` for the swatch highlight only: the active key, or
+  `''` when the user has tweaked a channel ("Custom"). Not read for rendering.
+
+`INITIAL.colors` = the `ember` palette (+ its new `c3`); `palette: 'ember'`.
+
+## Module map (changes)
+| File | Change |
+|---|---|
+| `src/lib/types.ts` | `Palette` gains `c3`. `HeroState` gains `colors:{canvas,c1,c2,c3}`; `palette` repurposed as highlight key (`''`=custom). |
+| `src/lib/palettes.ts` | Add a hand-picked `c3` secondary accent to each of the 5 palettes (resolved decision). |
+| `src/lib/presets.ts` | **Glitch** only: replace the hardcoded `-2px 0 #2af` with `-2px 0 var(--c3)`. No other preset changes. |
+| `src/components/ControlPanel.tsx` | In the Palette section, add 4 `<input type="color">` (testids `font-color`, `effect-color-1`, `effect-color-2`, `bg-color`) bound to `state.colors.*`; keep the 5 swatches. Show "Custom" when `palette===''`. |
+| `src/App.tsx` | `setColor(channel,value)` → patch `colors`, set `palette:''`, `replay()`. `setPalette(key)` → set `colors` from palette + `palette:key` + `replay()`. `generate()` → set `colors` from the mood's palette (+key). |
+| `src/components/HeroStage.tsx` | **Apply the CSS vars here** (see ordering fix) from `state.colors`, then build; add `state.colors` to the `useGSAP` deps. |
+| `src/lib/exportSnippet.ts` | Read `state.colors` (not `palettes[state.palette]`); emit real `canvas/c1/c2`; mention `c3` in the Glitch TODO comment. |
+
+## Ordering fix (correctness, not cosmetic)
+Today the palette CSS vars are written in an `App` `useEffect`. Effects flush
+**child-before-parent**, so `HeroStage`'s `useGSAP` (child) runs *before* `App`'s
+var-writing effect (parent) — meaning a baked-color effect (Glitch shadow, Neon
+glow, both read `var(--c2)` at build time) would rebuild against the **stale**
+color. Fix: move the `setProperty('--c1'|'--c2'|'--c3'|'--canvas', …)` calls to
+the **start of `HeroStage`'s `useGSAP` callback**, before `def.build(...)`, so
+fresh colors are always in place when the timeline is constructed. This also
+deletes `App`'s palette `useEffect`. Live, non-baked colors (font `--c1`,
+`--canvas` background) update via the same path on the same `replay()`.
+
+## New dependency
+**None.** Native `<input type="color">`, existing CSS-variable theming, existing
+`@playwright/test`. Fully within LOCKED tech.
+
+## Criterion → assertion map (extend `tests/validate.spec.ts`, one new test)
+| Crit | Assertion |
+|---|---|
+| C1 | Four color inputs present by testid, each with a hex value. |
+| C2 | Click `ink` palette → inputs reflect its hex + `.sw[data-palette=ink]` active; then `font-color.fill('#00ff88')` → no `.sw.active` (Custom) and `:root --c1` == `#00ff88`. |
+| C3 | `bg-color.fill('#123456')` → `getComputedStyle(:root) --canvas` == `#123456`; `effect-color-1.fill(...)` → `--c2` matches. |
+| C4 | Select Glitch; `effect-color-2.fill('#00ffff')` → `:root --c3` == `#00ffff` (var asserted; running-tween color is eyeball/screenshot). |
+| C5 | Set a custom bg, copy → clipboard contains that hex. |
+| C6 | Fresh load → `:root --c1` == ember `#f4f1ea`; Generate still sets a full palette (`--c2` == the mood palette's value, as V3 already checks). |
+
+## Risks & mitigations
+- **Effect-run ordering** → addressed above (apply vars inside `HeroStage`).
+- **`<input type="color">` value format** → browsers normalise to lowercase
+  `#rrggbb`; assert against lowercase hex, and store palette hexes lowercase.
+- **`fill()` on color inputs** → Playwright sets `.value` + fires `input`; React
+  `onChange` picks it up (same basis as the slider/select paths).
+- **Regression surface** → every read of `state.palette` for *rendering/export*
+  must move to `state.colors`; grep for `palettes[` and `state.palette` to catch
+  them. V3's `--c2`-after-Generate assertion guards the Generate path.
+
+## Smallest version / cut-list
+If behind: ship **C1+C2+C3** (font/bg/effect-1 pickers, palette-seed, live
+recolor) and **C5/C6** (export + no-regression, both cheap); **defer C4** — leave
+Glitch's second channel as its fixed blue and skip `--c3`. The state refactor is
+the prerequisite for all of them, so it is not cuttable.

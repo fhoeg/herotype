@@ -101,7 +101,7 @@ export const presets: Record<string, Preset> = {
       units.forEach((u) => {
         gsap.to(u, {
           x: () => gsap.utils.random(-3, 3),
-          textShadow: '2px 0 var(--c2), -2px 0 #2af',
+          textShadow: '2px 0 var(--c2), -2px 0 var(--c3)',
           duration: 0.08,
           repeat: -1,
           repeatRefresh: true,

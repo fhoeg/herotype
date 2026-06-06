@@ -10,6 +10,7 @@
   /* themed by palettes at runtime */
   --c1: #f4f1ea;
   --c2: #ff5a3c;
+  --c3: #19d3c5;
   --canvas: #0a0a0c;
   --display: 'Fraunces';
   --font-weight: 600;
@@ -350,6 +351,52 @@ input[type='range']::-moz-range-thumb {
 }
 .sw.active {
   border-color: var(--ink);
+}
+
+.custom-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  padding: 1px 5px;
+  vertical-align: middle;
+}
+.colors {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 12px;
+}
+.color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+.color-row input[type='color'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+.color-row input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+.color-row input[type='color']::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+.color-row input[type='color']::-moz-color-swatch {
+  border: none;
+  border-radius: 4px;
 }
 
 .foot {

@@ -24,8 +24,24 @@ export function HeroStage({ state, runId }: Props) {
 
   useGSAP(
     () => {
+      // Apply theme colours BEFORE building the timeline, so baked-colour
+      // effects (Glitch shadow, Neon glow read var(--c2)/var(--c3) at build
+      // time) always pick up the current values on a recolour/replay.
+      const root = document.documentElement.style
+      root.setProperty('--canvas', state.colors.canvas)
+      root.setProperty('--c1', state.colors.c1)
+      root.setProperty('--c2', state.colors.c2)
+      root.setProperty('--c3', state.colors.c3)
+
       const units = gsap.utils.toArray<HTMLElement>('.u')
       if (!units.length) return
+
+      // React reuses the .u spans (keyed by index) across keystrokes, so they
+      // can carry leftover inline styles from a prior interrupted tween. Clear
+      // them first: gsap.from() captures each element's *current* value as its
+      // end target, and a stale opacity:0 would make it animate from 0 to 0
+      // (invisible forever) — leaving only freshly-added chars visible.
+      gsap.set(units, { clearProps: 'all' })
 
       def.build(units, { speed: state.speed, stagger: state.stagger })
 
@@ -42,6 +58,10 @@ export function HeroStage({ state, runId }: Props) {
         state.headline,
         state.preset,
         state.font,
+        state.colors.canvas,
+        state.colors.c1,
+        state.colors.c2,
+        state.colors.c3,
         state.speed,
         state.stagger,
         runId,
