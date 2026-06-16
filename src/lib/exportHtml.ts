@@ -72,17 +72,17 @@ function sharedCss(state: HeroState, fontFamily: string, weight: number, trackin
   .herotype h1{
     margin:0; font-family:${fontFamily}; font-weight:${weight};
     letter-spacing:${tracking}; line-height:.95;
-    font-size:clamp(2.6rem,9vw,8.5rem); color:var(--c1); text-wrap:balance;
+    font-size:calc(clamp(2.6rem,9vw,8.5rem) * ${n(state.headlineScale)}); color:var(--c1); text-wrap:balance;
   }
   .herotype .ht-tag{
     margin:1.4rem 0 0; font-family:"Space Mono",monospace;
-    font-size:clamp(.7rem,1.3vw,.95rem); letter-spacing:.28em;
+    font-size:calc(clamp(.7rem,1.3vw,.95rem) * ${n(state.taglineScale)}); letter-spacing:.28em;
     text-transform:uppercase; color:var(--c2);
   }
   .herotype .u{display:inline-block;will-change:transform,opacity,filter}
   .herotype .word{display:inline-block;white-space:nowrap}
   .herotype .space{display:inline-block;width:.28em}
-  .herotype svg{display:block;height:clamp(3rem,13vw,9rem);width:auto;max-width:88vw;overflow:visible}`
+  .herotype svg{display:block;height:calc(clamp(3rem,13vw,9rem) * ${n(state.headlineScale)});width:auto;max-width:88vw;overflow:visible}`
 }
 
 function shell(state: HeroState, head: string, body: string): string {
@@ -130,7 +130,7 @@ window.addEventListener('load', function () {
 
 function buildDraw(state: HeroState): string {
   const def = presets[state.preset]
-  const drawFamily = state.font || DRAW_DEFAULT_FONT
+  const drawFamily = state.font || DEFAULT_FONT
   const fontFamily = `"${drawFamily}", serif`
   const fontUrl = fontFileUrl(drawFamily)
   const fallbackUrl = fontFileUrl(DRAW_DEFAULT_FONT)
@@ -145,7 +145,7 @@ ${sharedCss(state, fontFamily, state.weight || def.weight, def.tracking)}
   <svg role="img" aria-label="${escAttr(state.headline)}"></svg>
   <p class="ht-tag">${esc(state.tagline)}</p>
 </section>
-<script src="https://cdn.jsdelivr.net/npm/opentype.js@2.0.0/dist/opentype.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
 <script>
 window.addEventListener('load', function () {
   var SIZE = 200, TEXT = ${JSON.stringify(state.headline)};

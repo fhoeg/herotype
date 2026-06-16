@@ -74,6 +74,10 @@ export type HeroState = {
   /** seconds */
   stagger: number
   scale: number
+  /** Headline font-size multiplier, independent of the sub line. */
+  headlineScale: number
+  /** Sub line font-size multiplier, independent of the headline. */
+  taglineScale: number
   /** Text alignment of the headline + sub line. */
   align: 'left' | 'center' | 'right'
 }

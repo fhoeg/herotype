@@ -10,7 +10,7 @@ import type { HeroState } from './lib/types'
 
 const INITIAL: HeroState = {
   headline: 'Make it move.',
-  tagline: 'vibe code festival 2026',
+  tagline: 'static is boring',
   preset: 'rise',
   font: '',
   weight: 0,
@@ -20,6 +20,8 @@ const INITIAL: HeroState = {
   speed: 1,
   stagger: 0.04,
   scale: 1,
+  headlineScale: 1,
+  taglineScale: 1,
   align: 'center',
 }
 
@@ -117,6 +119,8 @@ export default function App() {
         setSpeed={(speed) => patch({ speed })}
         setStagger={(stagger) => patch({ stagger })}
         setScale={(scale) => patch({ scale })}
+        setHeadlineScale={(headlineScale) => patch({ headlineScale })}
+        setTaglineScale={(taglineScale) => patch({ taglineScale })}
       />
     </div>
   )

@@ -20,6 +20,8 @@ type Props = {
   setSpeed: (v: number) => void
   setStagger: (v: number) => void
   setScale: (v: number) => void
+  setHeadlineScale: (v: number) => void
+  setTaglineScale: (v: number) => void
   /** Last mood that was generated, for the live hint line. */
   lastMood: { presetName: string; palette: string; tagline: string } | null
 }
@@ -39,6 +41,8 @@ export function ControlPanel({
   setSpeed,
   setStagger,
   setScale,
+  setHeadlineScale,
+  setTaglineScale,
   lastMood,
 }: Props) {
   const [mood, setMood] = useState('')
@@ -244,6 +248,36 @@ export function ControlPanel({
             step={0.05}
             value={state.scale}
             onChange={(e) => setScale(+e.target.value)}
+          />
+        </div>
+        <div className="slider">
+          <label>
+            Headline size{' '}
+            <b data-testid="headline-scale-val">{state.headlineScale.toFixed(2)}×</b>
+          </label>
+          <input
+            type="range"
+            data-testid="headline-scale"
+            min={0.4}
+            max={2}
+            step={0.05}
+            value={state.headlineScale}
+            onChange={(e) => setHeadlineScale(+e.target.value)}
+          />
+        </div>
+        <div className="slider">
+          <label>
+            Sub line size{' '}
+            <b data-testid="tagline-scale-val">{state.taglineScale.toFixed(2)}×</b>
+          </label>
+          <input
+            type="range"
+            data-testid="tagline-scale"
+            min={0.4}
+            max={3}
+            step={0.05}
+            value={state.taglineScale}
+            onChange={(e) => setTaglineScale(+e.target.value)}
           />
         </div>
       </div>

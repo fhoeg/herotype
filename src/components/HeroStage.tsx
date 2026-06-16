@@ -1,8 +1,9 @@
 import { useRef, useState, useEffect, Fragment } from 'react'
+import type { CSSProperties } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { presets } from '../lib/presets'
-import { DEFAULT_FONT, DRAW_DEFAULT_FONT } from '../lib/fonts'
+import { DEFAULT_FONT } from '../lib/fonts'
 import { fontFileUrl, BUNDLED_FALLBACK } from '../lib/fontFiles'
 import type { HeroState } from '../lib/types'
 
@@ -45,9 +46,11 @@ export function HeroStage({ state, runId }: Props) {
 
 /**
  * Renders the split headline (word / char spans) and drives the active
- * preset's GSAP timeline. useGSAP scopes all selectors to this subtree and
- * reverts the previous timeline (including looping tweens) whenever any
- * dependency changes — that replaces the PoC's manual kill()/killTweensOf().
+ * preset's GSAP timeline. useGSAP scopes all selectors to this subtree;
+ * `revertOnUpdate: true` reverts the previous timeline (including looping
+ * wave/glitch tweens) on every dependency change — without it @gsap/react
+ * defers cleanup to unmount only, so infinite-repeat tweens from the old
+ * preset keep running on top of the new one.
  */
 function SpansStage({ state, runId }: Props) {
   const scope = useRef<HTMLDivElement>(null)
@@ -81,6 +84,7 @@ function SpansStage({ state, runId }: Props) {
     },
     {
       scope,
+      revertOnUpdate: true,
       // NOTE: state.headline is intentionally NOT a dependency. The split spans
       // are React-driven, so editing the headline updates the text live and the
       // new chars render at their natural CSS opacity (immediately readable).
@@ -113,7 +117,9 @@ function SpansStage({ state, runId }: Props) {
           transform: `scale(${state.scale})`,
           alignItems: ALIGN_ITEMS[state.align],
           textAlign: state.align,
-        }}
+          '--headline-scale': state.headlineScale,
+          '--tag-scale': state.taglineScale,
+        } as CSSProperties}
       >
         <h1
           data-testid="headline"
@@ -175,10 +181,11 @@ function DrawStage({ state, runId }: Props) {
       try {
         const mod = await import('opentype.js')
         const opentype = (mod as unknown as { default?: typeof mod }).default ?? mod
-        // Resolve the family: an explicit picker font, else the draw preset's
-        // own face. Try its jsDelivr .woff; on any fetch/parse failure fall back
+        // Resolve the family exactly like the spans branch — an explicit picker
+        // font, else the shared DEFAULT_FONT — so the effect never swaps the
+        // typeface. Try its jsDelivr .woff; on any fetch/parse failure fall back
         // to the bundled face so the headline always draws.
-        const family = state.font || DRAW_DEFAULT_FONT
+        const family = state.font || DEFAULT_FONT
         const parse = async (url: string) => {
           const r = await fetch(url)
           if (!r.ok) throw new Error(`font ${r.status}`)
@@ -257,6 +264,7 @@ function DrawStage({ state, runId }: Props) {
     },
     {
       scope,
+      revertOnUpdate: true,
       dependencies: [
         glyphs,
         state.drawFill,
@@ -280,7 +288,9 @@ function DrawStage({ state, runId }: Props) {
           transform: `scale(${state.scale})`,
           alignItems: ALIGN_ITEMS[state.align],
           textAlign: state.align,
-        }}
+          '--headline-scale': state.headlineScale,
+          '--tag-scale': state.taglineScale,
+        } as CSSProperties}
       >
         {glyphs && glyphs.ds.length > 0 && (
           <svg
