@@ -12,6 +12,7 @@ export type StyleResult = {
   weight: number
   colors: { canvas: string; c1: string; c2: string; c3: string }
   speed: number
+  headline: string
   tagline: string
   reasoning: string
 }

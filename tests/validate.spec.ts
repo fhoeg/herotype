@@ -73,6 +73,7 @@ test('V3 — Generate (AI) applies effect + colours + tagline, with fallback', a
         weight: 700,
         colors: { canvas: '#0c0414', c1: '#fef0ff', c2: '#ff3df2', c3: '#3df2ff' },
         speed: 1,
+        headline: 'NEON DREAMS',
         tagline: 'after dark',
         reasoning: 'retro synth glow',
       }),
@@ -80,19 +81,29 @@ test('V3 — Generate (AI) applies effect + colours + tagline, with fallback', a
   )
   await gotoApp(page)
 
+  // Tweak a setting first — a new style description must reset it to default.
+  await page.getByTestId('scale').focus()
+  for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowRight') // scale → 1.3×
+  await expect(page.getByTestId('scale-val')).toHaveText('1.3×')
+
   const taglineBefore = await page.getByTestId('tagline').textContent()
   await page.getByRole('button', { name: 'retro neon' }).click()
 
   await expect(page.locator('.preset[data-preset="neon"]')).toHaveClass(/active/)
+
+  // AI writes a fresh headline + tagline
+  await expect(page.getByTestId('headline-input')).toHaveValue('NEON DREAMS')
+  const taglineAfter = await page.getByTestId('tagline').textContent()
+  expect(taglineAfter).not.toBe(taglineBefore)
+  expect(taglineAfter?.trim()).toBe('after dark')
 
   const c2 = await page.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue('--c2').trim(),
   )
   expect(c2).toBe('#ff3df2') // AI-generated accent
 
-  const taglineAfter = await page.getByTestId('tagline').textContent()
-  expect(taglineAfter).not.toBe(taglineBefore)
-  expect(taglineAfter?.trim()).toBe('after dark')
+  // settings reset on a new description: scale is back to its default
+  await expect(page.getByTestId('scale-val')).toHaveText('1.0×')
 
   await expect(page.getByTestId('hint')).toContainText('Neon')
   await expect(page.getByTestId('hint')).toContainText('retro synth glow') // AI reasoning
@@ -257,18 +268,20 @@ test('F1–F6 — font override applies, reverts, loads on demand, exports, stic
   await page.getByTestId('copy').click()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('Anton')
 
-  // F6 — override is sticky across a preset switch and a fallback Generate.
-  // (The AI path deliberately sets its own font; the keyword fallback does not,
-  // so force the fallback here by failing /api/style.)
-  await page.route('**/api/style', (route) => route.fulfill({ status: 500, body: '{}' }))
-  await page.locator('.preset[data-preset="wave"]').click()
-  expect(await fontFamilyOf(page)).toContain('Anton')
-  await page.getByRole('button', { name: 'retro neon' }).click()
-  await expect(page.getByTestId('hint')).toContainText('offline')
-  expect(await fontFamilyOf(page)).toContain('Anton')
-
   // F2 (revert) — "Preset default" clears the override
   await select.selectOption('')
+  expect(await fontFamilyOf(page)).not.toContain('Anton')
+
+  // F6 — override is sticky across a preset switch...
+  await select.selectOption('Anton')
+  await page.locator('.preset[data-preset="wave"]').click()
+  expect(await fontFamilyOf(page)).toContain('Anton')
+
+  // ...but a new style description resets ALL settings, font included.
+  await page.route('**/api/style', (route) => route.fulfill({ status: 500, body: '{}' }))
+  await page.getByRole('button', { name: 'retro neon' }).click()
+  await expect(page.getByTestId('hint')).toContainText('offline')
+  await expect(select).toHaveValue('') // font reset to default
   expect(await fontFamilyOf(page)).not.toContain('Anton')
 
   // The deliberate 500 logs a resource-load error; everything else must be clean.

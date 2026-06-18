@@ -74,40 +74,49 @@ export default function App() {
   const patch = (next: Partial<HeroState>) => setState((s) => ({ ...s, ...next }))
   const replay = () => setRunId((n) => n + 1)
 
-  /** Local keyword parser — the offline / no-key / error fallback. */
+  /** Local keyword parser — the offline / no-key / error fallback. Resets every
+   *  setting like the AI path, but keeps the current headline (the offline
+   *  parser has no headline to invent). */
   const applyFallback = (mood: string) => {
     const r = parseMood(mood)
-    patch({
+    setState((s) => ({
+      ...INITIAL,
+      headline: s.headline,
       preset: r.preset,
       palette: r.palette,
       colors: { ...palettes[r.palette] },
       speed: r.speed,
       tagline: r.tagline,
-    })
+    }))
     setLastMood({ effectName: presets[r.preset].name, tagline: r.tagline, ai: false })
     replay()
   }
 
-  /** Apply a validated AI style result onto the hero. */
+  /** Apply a validated AI style result onto the hero. A new style description is
+   *  a clean slate: reset every setting to defaults, then overlay the AI's
+   *  choices (including a freshly written headline) so no prior tweak bleeds
+   *  through. */
   const applyStyle = async (d: StyleResult) => {
     if (!presets[d.effect]) throw new Error(`unknown effect ${d.effect}`)
     const font = d.font === 'Fraunces' ? '' : d.font
     const weight = nearestWeight(await fetchFontWeights(font || DEFAULT_FONT), d.weight)
-    setState((s) => ({
-      ...s,
+    const headline = d.headline.trim().slice(0, 40) || INITIAL.headline
+    setState({
+      ...INITIAL,
+      headline,
+      tagline: d.tagline.slice(0, 50),
       preset: d.effect,
       font,
       weight,
       palette: '', // diverged from any preset palette → "Custom"
       colors: {
-        canvas: safeHex(d.colors.canvas, s.colors.canvas),
-        c1: safeHex(d.colors.c1, s.colors.c1),
-        c2: safeHex(d.colors.c2, s.colors.c2),
-        c3: safeHex(d.colors.c3, s.colors.c3),
+        canvas: safeHex(d.colors.canvas, INITIAL.colors.canvas),
+        c1: safeHex(d.colors.c1, INITIAL.colors.c1),
+        c2: safeHex(d.colors.c2, INITIAL.colors.c2),
+        c3: safeHex(d.colors.c3, INITIAL.colors.c3),
       },
       speed: Math.min(2.2, Math.max(0.4, d.speed)),
-      tagline: d.tagline.slice(0, 50),
-    }))
+    })
     setLastMood({
       effectName: presets[d.effect].name,
       tagline: d.tagline.slice(0, 50),

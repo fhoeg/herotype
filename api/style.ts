@@ -56,7 +56,10 @@ const styleSchema = z.object({
     .object({ canvas: hex, c1: hex, c2: hex, c3: hex })
     .describe('canvas=background, c1=headline, c2=accent, c3=secondary accent'),
   speed: z.number().describe('Animation speed multiplier, 0.4 (calm) to 2.2 (frantic)'),
-  tagline: z.string().describe('Punchy sub line, ≤50 chars'),
+  headline: z
+    .string()
+    .describe('Main display headline — 1–5 punchy words capturing the vibe (the big hero text, a brand-style phrase, NOT a full sentence)'),
+  tagline: z.string().describe('Short sub line under the headline, ≤50 chars'),
   reasoning: z.string().describe('One short sentence on why this fits'),
 })
 
@@ -85,7 +88,9 @@ ${PALETTE_INSPO}
 
 weight: 100–900 matching the mood (heavier = louder).
 speed: 0.4 (slow/calm) to 2.2 (fast/frantic).
-tagline: a punchy sub line, max 50 chars, fitting the vibe.
+headline: the big hero text — 1–5 punchy words capturing the vibe (a
+brand-style phrase or statement, NOT a full sentence, NOT the tagline).
+tagline: a short sub line under the headline, max 50 chars, fitting the vibe.
 reasoning: one short sentence on why this combination fits.`
 
 export async function POST(req: Request): Promise<Response> {
