@@ -29,10 +29,13 @@ function splitMarkup(text: string): string {
     .join('')
 }
 
-/** Google Fonts stylesheet for the headline face + the Space Mono sub line. */
-function fontsHref(font: string): string {
+/** Google Fonts stylesheet for the headline face + the Space Mono sub line.
+ *  Only the face's real `weights` are requested — requesting a weight a font
+ *  lacks 400s the whole css2 query. */
+function fontsHref(font: string, weights: number[]): string {
   const fam = (font || DEFAULT_FONT).replace(/ /g, '+')
-  return `https://fonts.googleapis.com/css2?family=${fam}:wght@400;700&family=Space+Mono:wght@400;700&display=swap`
+  const ws = (weights.length ? weights : [400]).join(';')
+  return `https://fonts.googleapis.com/css2?family=${fam}:wght@${ws}&family=Space+Mono:wght@400;700&display=swap`
 }
 
 /** The GSAP "in" timeline for each span-based preset, with params baked in. */
@@ -85,7 +88,7 @@ function sharedCss(state: HeroState, fontFamily: string, weight: number, trackin
   .herotype svg{display:block;height:calc(clamp(3rem,13vw,9rem) * ${n(state.headlineScale)});width:auto;max-width:88vw;overflow:visible}`
 }
 
-function shell(state: HeroState, head: string, body: string): string {
+function shell(state: HeroState, weights: number[], head: string, body: string): string {
   const def = presets[state.preset]
   return `<!doctype html>
 <html lang="en">
@@ -96,7 +99,7 @@ function shell(state: HeroState, head: string, body: string): string {
 <!-- HEROTYPE export · ${def.name} · ${state.palette || 'custom'} palette -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="${fontsHref(state.font)}" rel="stylesheet">
+<link href="${fontsHref(state.font, weights)}" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 ${head}</head>
 <body>
@@ -104,7 +107,7 @@ ${body}</body>
 </html>`
 }
 
-function buildSpans(state: HeroState): string {
+function buildSpans(state: HeroState, weights: number[]): string {
   const def = presets[state.preset]
   const fontFamily = `"${state.font || DEFAULT_FONT}", serif`
   const weight = state.weight || def.weight
@@ -125,14 +128,17 @@ window.addEventListener('load', function () {
 });
 </script>
 `
-  return shell(state, head, body)
+  return shell(state, weights, head, body)
 }
 
-function buildDraw(state: HeroState): string {
+function buildDraw(state: HeroState, weights: number[]): string {
   const def = presets[state.preset]
   const drawFamily = state.font || DEFAULT_FONT
   const fontFamily = `"${drawFamily}", serif`
-  const fontUrl = fontFileUrl(drawFamily)
+  const weight = state.weight || def.weight
+  // Chosen weight → same face @400 → bundled-equivalent Anton @400.
+  const fontUrl = fontFileUrl(drawFamily, weight)
+  const midUrl = fontFileUrl(drawFamily, 400)
   const fallbackUrl = fontFileUrl(DRAW_DEFAULT_FONT)
   const head = `<style>
 ${sharedCss(state, fontFamily, state.weight || def.weight, def.tracking)}
@@ -169,15 +175,19 @@ window.addEventListener('load', function () {
     tl.to(paths, { strokeDashoffset: 0, duration: ${n(1 / state.speed)}, ease: 'power1.inOut', stagger: ${n(state.stagger * 3 + 0.12)} });${fillStep}
     gsap.fromTo('.herotype .ht-tag', { opacity: 0, y: 10 }, { opacity: 0.9, y: 0, duration: 0.6, delay: 0.4, ease: 'power2.out' });
   }
-  fetch(${JSON.stringify(fontUrl)}).then(function (r) { return r.arrayBuffer(); })
-    .then(draw)
-    .catch(function () { fetch(${JSON.stringify(fallbackUrl)}).then(function (r) { return r.arrayBuffer(); }).then(draw); });
+  function load(url) { return fetch(url).then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); }); }
+  load(${JSON.stringify(fontUrl)})
+    .catch(function () { return load(${JSON.stringify(midUrl)}); })
+    .catch(function () { return load(${JSON.stringify(fallbackUrl)}); })
+    .then(draw);
 });
 </script>
 `
-  return shell(state, head, body)
+  return shell(state, weights, head, body)
 }
 
-export function buildExport(state: HeroState): string {
-  return presets[state.preset].kind === 'draw' ? buildDraw(state) : buildSpans(state)
+export function buildExport(state: HeroState, weights: number[] = [400, 700]): string {
+  return presets[state.preset].kind === 'draw'
+    ? buildDraw(state, weights)
+    : buildSpans(state, weights)
 }

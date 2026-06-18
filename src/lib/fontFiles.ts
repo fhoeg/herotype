@@ -22,12 +22,14 @@ export function familyName(cssFont: string): string {
 }
 
 /**
- * jsDelivr `@fontsource` `.woff` URL for `family` at weight 400 / latin / normal.
- * Returns the override when present.
+ * jsDelivr `@fontsource` `.woff` URL for `family` at the given `weight` / latin
+ * / normal. `@fontsource` ships a static instance per listed weight (even for
+ * variable faces), so any weight reported by {@link fetchFontWeights} resolves
+ * to a real file. Returns the override when present.
  */
-export function fontFileUrl(family: string): string {
+export function fontFileUrl(family: string, weight = 400): string {
   const name = familyName(family)
   if (FONT_FILE_OVERRIDES[name]) return FONT_FILE_OVERRIDES[name]
   const id = name.toLowerCase().replace(/\s+/g, '-')
-  return `https://cdn.jsdelivr.net/npm/@fontsource/${id}/files/${id}-latin-400-normal.woff`
+  return `https://cdn.jsdelivr.net/npm/@fontsource/${id}/files/${id}-latin-${weight}-normal.woff`
 }

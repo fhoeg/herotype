@@ -7,6 +7,8 @@ import type { HeroState } from '../lib/types'
 
 type Props = {
   state: HeroState
+  /** Weights the active face actually ships (from the fontsource API). */
+  weights: number[]
   setHeadline: (v: string) => void
   setTagline: (v: string) => void
   setAlign: (a: 'left' | 'center' | 'right') => void
@@ -22,12 +24,20 @@ type Props = {
   setScale: (v: number) => void
   setHeadlineScale: (v: number) => void
   setTaglineScale: (v: number) => void
+  /** True while the AI style request is in flight. */
+  generating: boolean
   /** Last mood that was generated, for the live hint line. */
-  lastMood: { presetName: string; palette: string; tagline: string } | null
+  lastMood: {
+    effectName: string
+    tagline: string
+    ai: boolean
+    reasoning?: string
+  } | null
 }
 
 export function ControlPanel({
   state,
+  weights,
   setHeadline,
   setTagline,
   setAlign,
@@ -43,6 +53,7 @@ export function ControlPanel({
   setScale,
   setHeadlineScale,
   setTaglineScale,
+  generating,
   lastMood,
 }: Props) {
   const [mood, setMood] = useState('')
@@ -88,28 +99,40 @@ export function ControlPanel({
       </div>
 
       <div className="field">
-        <h2>Mood → animation (the AI hook)</h2>
+        <h2>Describe the style (AI)</h2>
         <div className="mood-row">
           <input
             type="text"
             data-testid="mood-input"
-            placeholder="e.g. ominous, cyberpunk, heavy"
+            placeholder="e.g. haunted victorian séance"
             value={mood}
+            disabled={generating}
             onChange={(e) => setMood(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && generate(mood)}
+            onKeyDown={(e) => e.key === 'Enter' && !generating && generate(mood)}
           />
-          <button className="gen" data-testid="generate" onClick={() => generate(mood)}>
-            Generate
+          <button
+            className="gen"
+            data-testid="generate"
+            disabled={generating}
+            onClick={() => generate(mood)}
+          >
+            {generating ? 'Generating…' : 'Generate'}
           </button>
         </div>
         <div className="hint" data-testid="hint">
           {lastMood ? (
-            <>
-              → <b>{lastMood.presetName}</b> effect · <b>{lastMood.palette}</b>{' '}
-              palette · tagline “{lastMood.tagline}”
-            </>
+            lastMood.ai ? (
+              <>
+                → <b>{lastMood.effectName}</b> · “{lastMood.tagline}” — {lastMood.reasoning}
+              </>
+            ) : (
+              <>
+                → <b>{lastMood.effectName}</b> · “{lastMood.tagline}”{' '}
+                <span className="custom-tag">offline</span>
+              </>
+            )
           ) : (
-            'Type a vibe. The generator picks an effect, a palette, the timing — and writes a tagline.'
+            'Describe a vibe. The AI picks the effect, font, weight, colours, timing — and writes a tagline.'
           )}
         </div>
         <div className="chips">
@@ -117,6 +140,7 @@ export function ControlPanel({
             <button
               key={m}
               className="chip"
+              disabled={generating}
               onClick={() => {
                 setMood(m)
                 generate(m)
@@ -160,7 +184,7 @@ export function ControlPanel({
           onChange={(e) => setWeight(+e.target.value)}
         >
           <option value={0}>Preset default</option>
-          {[300, 400, 500, 600, 700, 800, 900].map((w) => (
+          {weights.map((w) => (
             <option key={w} value={w} style={{ fontWeight: w }}>
               {w}
             </option>

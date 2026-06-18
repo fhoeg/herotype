@@ -168,6 +168,7 @@ type Glyphs = { ds: string[]; width: number; height: number }
 function DrawStage({ state, runId }: Props) {
   const scope = useRef<HTMLDivElement>(null)
   const [glyphs, setGlyphs] = useState<Glyphs | null>(null)
+  const def = presets[state.preset]
 
   // Load the font binary + compute glyph outlines whenever the text changes.
   useEffect(() => {
@@ -183,9 +184,11 @@ function DrawStage({ state, runId }: Props) {
         const opentype = (mod as unknown as { default?: typeof mod }).default ?? mod
         // Resolve the family exactly like the spans branch — an explicit picker
         // font, else the shared DEFAULT_FONT — so the effect never swaps the
-        // typeface. Try its jsDelivr .woff; on any fetch/parse failure fall back
-        // to the bundled face so the headline always draws.
+        // typeface. Outlines come from the woff at the chosen weight; on a miss
+        // step down to the same face's weight 400, then the bundled face, so
+        // the headline always draws without silently swapping the typeface.
         const family = state.font || DEFAULT_FONT
+        const weight = state.weight || def.weight
         const parse = async (url: string) => {
           const r = await fetch(url)
           if (!r.ok) throw new Error(`font ${r.status}`)
@@ -193,9 +196,13 @@ function DrawStage({ state, runId }: Props) {
         }
         let font
         try {
-          font = await parse(fontFileUrl(family))
+          font = await parse(fontFileUrl(family, weight))
         } catch {
-          font = await parse(BUNDLED_FALLBACK)
+          try {
+            font = await parse(fontFileUrl(family, 400))
+          } catch {
+            font = await parse(BUNDLED_FALLBACK)
+          }
         }
         if (cancelled) return
         const unit = DRAW_SIZE / font.unitsPerEm
@@ -215,7 +222,7 @@ function DrawStage({ state, runId }: Props) {
     return () => {
       cancelled = true
     }
-  }, [state.headline, state.preset, state.font])
+  }, [state.headline, state.preset, state.font, state.weight])
 
   // Stroke the outlines on once they're in the DOM.
   useGSAP(

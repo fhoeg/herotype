@@ -57,12 +57,30 @@ test('V1 — typing the headline re-renders and stays empty-safe', async ({ page
 // ---------------------------------------------------------------------------
 // V3 — the wow beat (run early: it's the protected core beat)
 // ---------------------------------------------------------------------------
-test('V3 — Generate changes preset + palette + tagline together', async ({ page, errors }) => {
+test('V3 — Generate (AI) applies effect + colours + tagline, with fallback', async ({
+  page,
+  errors,
+}) => {
+  // Part A — AI path. Mock /api/style with a deterministic StyleResult (no key
+  // needed in CI; mirrors production where the function returns 200).
+  await page.route('**/api/style', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        effect: 'neon',
+        font: 'Anton',
+        weight: 700,
+        colors: { canvas: '#0c0414', c1: '#fef0ff', c2: '#ff3df2', c3: '#3df2ff' },
+        speed: 1,
+        tagline: 'after dark',
+        reasoning: 'retro synth glow',
+      }),
+    }),
+  )
   await gotoApp(page)
 
   const taglineBefore = await page.getByTestId('tagline').textContent()
-
-  // mood chip "retro neon" → neon preset + neon palette
   await page.getByRole('button', { name: 'retro neon' }).click()
 
   await expect(page.locator('.preset[data-preset="neon"]')).toHaveClass(/active/)
@@ -70,22 +88,27 @@ test('V3 — Generate changes preset + palette + tagline together', async ({ pag
   const c2 = await page.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue('--c2').trim(),
   )
-  expect(c2).toBe('#ff3df2') // neon palette c2
+  expect(c2).toBe('#ff3df2') // AI-generated accent
 
   const taglineAfter = await page.getByTestId('tagline').textContent()
   expect(taglineAfter).not.toBe(taglineBefore)
-  expect(NEON_TAGLINES).toContain(taglineAfter?.trim())
+  expect(taglineAfter?.trim()).toBe('after dark')
 
   await expect(page.getByTestId('hint')).toContainText('Neon')
-  await expect(page.getByTestId('hint')).toContainText('palette')
+  await expect(page.getByTestId('hint')).toContainText('retro synth glow') // AI reasoning
 
-  // nonsense phrase → graceful fallback, never a blank stage
+  // Part B — fallback path. Make the endpoint fail; Generate must still apply a
+  // valid preset via the local keyword parser and never blank the stage.
+  await page.unroute('**/api/style')
+  await page.route('**/api/style', (route) => route.fulfill({ status: 500, body: '{}' }))
   await page.getByTestId('mood-input').fill('zxqw blorptastic')
   await page.getByTestId('generate').click()
+  await expect(page.getByTestId('hint')).toContainText('offline') // fallback marker
   await expect(page.locator('.preset.active')).toHaveCount(1)
   expect(await charUnits(page).count()).toBeGreaterThan(0)
 
-  expect(errors).toEqual([])
+  // The deliberate 500 logs a resource-load error; everything else must be clean.
+  expect(errors.filter((e) => !e.includes('Failed to load resource'))).toEqual([])
 })
 
 // ---------------------------------------------------------------------------
@@ -234,17 +257,22 @@ test('F1–F6 — font override applies, reverts, loads on demand, exports, stic
   await page.getByTestId('copy').click()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('Anton')
 
-  // F6 — override is sticky across a preset switch AND a Generate
+  // F6 — override is sticky across a preset switch and a fallback Generate.
+  // (The AI path deliberately sets its own font; the keyword fallback does not,
+  // so force the fallback here by failing /api/style.)
+  await page.route('**/api/style', (route) => route.fulfill({ status: 500, body: '{}' }))
   await page.locator('.preset[data-preset="wave"]').click()
   expect(await fontFamilyOf(page)).toContain('Anton')
   await page.getByRole('button', { name: 'retro neon' }).click()
+  await expect(page.getByTestId('hint')).toContainText('offline')
   expect(await fontFamilyOf(page)).toContain('Anton')
 
   // F2 (revert) — "Preset default" clears the override
   await select.selectOption('')
   expect(await fontFamilyOf(page)).not.toContain('Anton')
 
-  expect(errors).toEqual([])
+  // The deliberate 500 logs a resource-load error; everything else must be clean.
+  expect(errors.filter((e) => !e.includes('Failed to load resource'))).toEqual([])
 })
 
 // ---------------------------------------------------------------------------
@@ -375,7 +403,7 @@ test('Sub line is editable and alignment switches left/center/right', async ({ p
 
   // Sub line: default value + live edit reflects in the rendered tagline
   const tagInput = page.getByTestId('tagline-input')
-  await expect(tagInput).toHaveValue('vibe code festival 2026')
+  await expect(tagInput).toHaveValue('static is boring')
   await tagInput.fill('shipped at 3am')
   await expect(page.getByTestId('tagline')).toHaveText('shipped at 3am')
 

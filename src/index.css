@@ -89,6 +89,14 @@ body {
   color: var(--ink);
   border-color: var(--muted);
 }
+/* Enlarge the leading glyph so it reads at the same visual weight as the label,
+   nudged to optically center against the uppercase text. */
+.ghost .ico {
+  font-size: 1.55em;
+  line-height: 0;
+  vertical-align: -0.18em;
+  margin-right: 0.1em;
+}
 
 .canvas {
   flex: 1;
