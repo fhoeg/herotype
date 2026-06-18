@@ -12,6 +12,15 @@ import type { StyleResult } from './lib/styleSchema'
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 /** Keep an AI hex if valid, else fall back to the current channel value. */
 const safeHex = (v: string, fallback: string) => (HEX.test(v) ? v : fallback)
+
+/** Strip stray markdown the model sometimes emits (e.g. "**NEON**", "`x`",
+ *  wrapping quotes) so display copy renders clean. Unwraps paired emphasis
+ *  markers — a lone underscore in a stylized headline is left intact. */
+const stripMd = (s: string) =>
+  s
+    .replace(/(\*\*|__|\*|_|~~|`)(.+?)\1/g, '$2') // unwrap **bold** *italic* `code` ~~strike~~
+    .replace(/^#{1,6}\s+/, '') // leading markdown heading
+    .replace(/^[\s"'“”‘’]+|[\s"'“”‘’]+$/g, '') // wrapping quotes / whitespace
 /** Snap a requested weight to the nearest one the chosen face actually ships. */
 const nearestWeight = (weights: number[], w: number) =>
   weights.reduce((best, x) => (Math.abs(x - w) < Math.abs(best - w) ? x : best), weights[0] ?? 400)
@@ -100,11 +109,12 @@ export default function App() {
     if (!presets[d.effect]) throw new Error(`unknown effect ${d.effect}`)
     const font = d.font === 'Fraunces' ? '' : d.font
     const weight = nearestWeight(await fetchFontWeights(font || DEFAULT_FONT), d.weight)
-    const headline = d.headline.trim().slice(0, 40) || INITIAL.headline
+    const headline = stripMd(d.headline).slice(0, 40) || INITIAL.headline
+    const tagline = stripMd(d.tagline).slice(0, 50)
     setState({
       ...INITIAL,
       headline,
-      tagline: d.tagline.slice(0, 50),
+      tagline,
       preset: d.effect,
       font,
       weight,
@@ -119,8 +129,8 @@ export default function App() {
     })
     setLastMood({
       effectName: presets[d.effect].name,
-      tagline: d.tagline.slice(0, 50),
-      reasoning: d.reasoning.slice(0, 200),
+      tagline,
+      reasoning: stripMd(d.reasoning).slice(0, 200),
       ai: true,
     })
     replay()

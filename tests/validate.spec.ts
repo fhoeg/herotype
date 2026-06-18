@@ -73,9 +73,9 @@ test('V3 — Generate (AI) applies effect + colours + tagline, with fallback', a
         weight: 700,
         colors: { canvas: '#0c0414', c1: '#fef0ff', c2: '#ff3df2', c3: '#3df2ff' },
         speed: 1,
-        headline: 'NEON DREAMS',
+        headline: '**NEON DREAMS**', // markdown must be stripped client-side
         tagline: 'after dark',
-        reasoning: 'retro synth glow',
+        reasoning: '**retro** synth glow',
       }),
     }),
   )
