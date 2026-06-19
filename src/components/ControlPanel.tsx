@@ -60,6 +60,65 @@ export function ControlPanel({
 
   return (
     <aside className="panel">
+      {/* Primary action — describe a style and let the AI build the whole hero. */}
+      <div className="ai-field">
+        <h2 className="ai-title">
+          Describe the style <span className="ai-badge">AI</span>
+        </h2>
+        <input
+          type="text"
+          className="ai-input"
+          data-testid="mood-input"
+          placeholder="e.g. haunted victorian séance"
+          value={mood}
+          disabled={generating}
+          onChange={(e) => setMood(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && !generating && generate(mood)}
+        />
+        <button
+          className="gen ai-gen"
+          data-testid="generate"
+          disabled={generating}
+          onClick={() => generate(mood)}
+        >
+          {generating ? 'Generating…' : 'Generate'}
+        </button>
+        <div className="chips">
+          {moodChips.map((m) => (
+            <button
+              key={m}
+              className="chip"
+              disabled={generating}
+              onClick={() => {
+                setMood(m)
+                generate(m)
+              }}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+        <div className="hint" data-testid="hint">
+          {lastMood ? (
+            lastMood.ai ? (
+              <>
+                → <b>{lastMood.effectName}</b> · “{lastMood.tagline}” — {lastMood.reasoning}
+              </>
+            ) : (
+              <>
+                → <b>{lastMood.effectName}</b> · “{lastMood.tagline}”{' '}
+                <span className="custom-tag">offline</span>
+              </>
+            )
+          ) : (
+            'Describe a vibe. The AI picks the effect, font, weight, colours, timing — and writes the headline + sub line.'
+          )}
+        </div>
+      </div>
+
+      {/* Everything below tweaks what the AI produced. */}
+      <div className="panel-divider">Adjust</div>
+
       <div className="field">
         <h2>Headline</h2>
         <input
@@ -93,60 +152,6 @@ export function ControlPanel({
               onClick={() => setAlign(a)}
             >
               {a}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="field">
-        <h2>Describe the style (AI)</h2>
-        <div className="mood-row">
-          <input
-            type="text"
-            data-testid="mood-input"
-            placeholder="e.g. haunted victorian séance"
-            value={mood}
-            disabled={generating}
-            onChange={(e) => setMood(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !generating && generate(mood)}
-          />
-          <button
-            className="gen"
-            data-testid="generate"
-            disabled={generating}
-            onClick={() => generate(mood)}
-          >
-            {generating ? 'Generating…' : 'Generate'}
-          </button>
-        </div>
-        <div className="hint" data-testid="hint">
-          {lastMood ? (
-            lastMood.ai ? (
-              <>
-                → <b>{lastMood.effectName}</b> · “{lastMood.tagline}” — {lastMood.reasoning}
-              </>
-            ) : (
-              <>
-                → <b>{lastMood.effectName}</b> · “{lastMood.tagline}”{' '}
-                <span className="custom-tag">offline</span>
-              </>
-            )
-          ) : (
-            'Describe a vibe. The AI picks the effect, font, weight, colours, timing — and writes a tagline.'
-          )}
-        </div>
-        <div className="chips">
-          {moodChips.map((m) => (
-            <button
-              key={m}
-              className="chip"
-              disabled={generating}
-              onClick={() => {
-                setMood(m)
-                generate(m)
-              }}
-            >
-              {m}
             </button>
           ))}
         </div>
