@@ -20,7 +20,10 @@ import { z } from 'zod'
 // Effect keys — mirror Object.keys(presets) in src/lib/presets.ts.
 const EFFECT_KEYS = ['rise', 'kinetic', 'wave', 'glitch', 'neon', 'drop', 'draw'] as const
 // Background keys — mirror BG_KEYS in src/lib/background.ts (KEEP IN SYNC).
-const BG_KEYS = ['none', 'aurora', 'particles', 'grid', 'waves', 'noise'] as const
+const BG_KEYS = [
+  'none', 'aurora', 'particles',
+  'plasma', 'mesh', 'chrome', 'dots',
+] as const
 // 'Fraunces' = the app default; rest mirror googleFonts in src/lib/fonts.ts
 // (KEEP IN SYNC). All exist on @fontsource as google type with a latin-400 woff.
 const FONT_OPTIONS = [
@@ -215,9 +218,10 @@ background: a subtle animated backdrop, behind the text, that reinforces the
 mood (pick one): ${BG_KEYS.join(', ')}.
 - aurora = soft drifting colour glow (dreamy, elegant, calm, premium);
   particles = floating dust/sparks (playful, airy, energetic, magical);
-  grid = retro synthwave perspective floor (neon, 80s, cyber, arcade);
-  waves = flowing horizontal lines (liquid, organic, ambient, oceanic);
-  noise = film grain + scanlines (glitch, gritty, dystopian, cyber);
+  plasma = flowing liquid-marble colour (psychedelic, lush, organic, bold);
+  mesh = soft drifting gradient mesh (modern, premium, dreamy, fluid);
+  chrome = flowing liquid-metal surface (futuristic, sleek, Y2K, hypebeast);
+  dots = fine twinkling dot grid (techy, minimal, clean, data);
   none = a flat solid canvas (stark, brutalist, ultra-minimal).
 bgIntensity: 0–1 density/opacity. Keep it subtle so the headline stays the
 hero — 0.3–0.6 suits most moods; go higher only for deliberately lush vibes.

@@ -50,7 +50,9 @@ function BackgroundCanvas({ state }: { state: HeroState }) {
     state.bgIntensity,
     state.bgSpeed,
   ])
-  return <canvas ref={ref} className="bg-canvas" aria-hidden="true" />
+  // Keyed by kind: switching across the 2D↔WebGL boundary needs a fresh canvas
+  // element (a canvas is locked to one context type for its lifetime).
+  return <canvas key={state.background} ref={ref} className="bg-canvas" aria-hidden="true" />
 }
 
 /**

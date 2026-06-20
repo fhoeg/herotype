@@ -18,12 +18,20 @@ export type BgColors = { canvas: string; c1: string; c2: string; c3: string }
 /** Background catalogue — drives the picker + the AI enum. `none` = flat canvas. */
 export const backgrounds: { key: string; name: string; desc: string }[] = [
   { key: 'none', name: 'None', desc: 'flat canvas' },
+  // Canvas-2D effects (lightweight)
   { key: 'aurora', name: 'Aurora', desc: 'soft drifting glow' },
   { key: 'particles', name: 'Particles', desc: 'floating dust' },
-  { key: 'grid', name: 'Grid', desc: 'retro perspective' },
-  { key: 'waves', name: 'Waves', desc: 'flowing lines' },
-  { key: 'noise', name: 'Static', desc: 'grain + scanlines' },
+  // WebGL shader effects (sophisticated)
+  { key: 'plasma', name: 'Plasma', desc: 'liquid marble' },
+  { key: 'mesh', name: 'Mesh', desc: 'gradient flow' },
+  { key: 'chrome', name: 'Chrome', desc: 'iridescent metal' },
+  { key: 'dots', name: 'Dot field', desc: 'twinkling grid' },
 ]
+
+/** Kinds rendered with WebGL (vs Canvas 2D). The canvas element must be
+ *  remounted when crossing this boundary — a canvas is locked to one context
+ *  type for its lifetime. */
+export const GL_BG_KEYS = ['plasma', 'mesh', 'chrome', 'dots']
 
 export const BG_KEYS = backgrounds.map((b) => b.key)
 
@@ -42,10 +50,9 @@ export function runBackground(
   intensity: number,
   speed: number,
 ): () => void {
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return () => {}
   if (type === 'none') {
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    const c0 = canvas.getContext('2d')
+    if (c0) c0.clearRect(0, 0, canvas.width, canvas.height)
     return () => {}
   }
 
@@ -62,7 +69,147 @@ export function runBackground(
   const c1 = rgb(colors.c1)
   const c2 = rgb(colors.c2)
   const c3 = rgb(colors.c3)
+  const cv = rgb(colors.canvas)
   const css = (c: number[], a: number) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'
+
+  // ── WebGL shader backgrounds (plasma / mesh / chrome / dots) ──────────────
+  // Self-contained: one full-screen triangle + a fragment shader that branches
+  // on the kind. Themed by palette uniforms; `inten` keeps it muted so the
+  // headline stays readable. Falls back to a flat fill if WebGL is unavailable.
+  if (type === 'plasma' || type === 'mesh' || type === 'chrome' || type === 'dots') {
+    const gl = (canvas.getContext('webgl', { antialias: true, alpha: false }) ||
+      canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null
+    if (!gl) return () => {}
+    const kind = type === 'plasma' ? 0 : type === 'mesh' ? 1 : type === 'chrome' ? 2 : 3
+
+    const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}'
+    const FRAG = `precision highp float;
+uniform vec2 uRes;uniform float uTime;uniform float uInten;uniform int uKind;
+uniform vec3 uC1;uniform vec3 uC2;uniform vec3 uC3;uniform vec3 uBg;
+float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);float a=hash(i),b=hash(i+vec2(1.,0.)),c=hash(i+vec2(0.,1.)),d=hash(i+vec2(1.,1.));vec2 u=f*f*(3.-2.*f);return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}
+float fbm(vec2 p){float s=0.,a=0.5;mat2 m=mat2(1.6,1.2,-1.2,1.6);for(int i=0;i<5;i++){s+=a*vn(p);p=m*p;a*=0.5;}return s;}
+vec3 iris(float t){return 0.5+0.5*cos(6.2831853*(vec3(0.0,0.33,0.67)+t));}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes;
+  vec2 p=(gl_FragCoord.xy-0.5*uRes)/min(uRes.x,uRes.y);
+  float tm=uTime;vec3 col=uBg;
+  if(uKind==0){
+    vec2 q=vec2(fbm(p*2.2+tm*0.08),fbm(p*2.2+vec2(5.2,1.3)-tm*0.10));
+    vec2 r=vec2(fbm(p*2.2+2.2*q+tm*0.12+1.7),fbm(p*2.2+2.2*q-tm*0.11+8.3));
+    float f=clamp(fbm(p*2.2+3.0*r),0.0,1.0);
+    vec3 g=mix(uC1,uC2,smoothstep(0.05,0.65,f));
+    g=mix(g,uC3,smoothstep(0.5,1.0,f));
+    g*=0.18+0.95*smoothstep(0.12,0.7,f);
+    col=g;
+  }else if(uKind==1){
+    float w=fbm(p*0.9+tm*0.05)*1.5;
+    float a=0.5+0.5*sin(p.x*1.6+w+tm*0.22);
+    float b=0.5+0.5*sin(p.y*1.5+w*1.2-tm*0.18+2.0);
+    float c=0.5+0.5*sin((p.x+p.y)*1.2+w-tm*0.15+4.0);
+    vec3 g=mix(uC1,uC2,a);g=mix(g,uC3,b);g=mix(g,uC1,c*0.4);col=g;
+  }else if(uKind==2){
+    // Full-bleed liquid chrome: a domain-warped height field, shaded as polished
+    // metal — crisp light/dark reflection bands from the surface normal, a sharp
+    // specular, iridescent sheen at grazing angles, and a faint palette tint.
+    vec2 w=vec2(fbm(p*1.5+tm*0.10),fbm(p*1.5-tm*0.08+3.1));
+    float e=0.012;
+    float hC=fbm(p*1.8+1.5*w+tm*0.05);
+    float hX=fbm((p+vec2(e,0.0))*1.8+1.5*w+tm*0.05);
+    float hY=fbm((p+vec2(0.0,e))*1.8+1.5*w+tm*0.05);
+    vec3 nrm=normalize(vec3(-(hX-hC)/e*0.4,-(hY-hC)/e*0.4,1.0));
+    float refl=nrm.y;
+    float bands=smoothstep(0.35,0.65,0.5+0.5*sin(refl*8.0+tm*0.4));
+    vec3 metal=mix(vec3(0.04),vec3(0.98),bands);
+    metal+=pow(clamp(nrm.z,0.0,1.0),6.0)*0.4;
+    metal=mix(metal,iris(refl*1.2+tm*0.05),(1.0-nrm.z)*0.3);
+    metal*=mix(vec3(1.0),clamp(uC3*2.0,0.0,1.0),0.12);
+    col=metal;
+  }else{
+    vec2 sc=vec2(uRes.x/uRes.y,1.0)*42.0;
+    vec2 gp=fract(uv*sc)-0.5;float d=length(gp);
+    float tw=0.5+0.5*sin(tm*1.8+hash(floor(uv*sc))*40.0);
+    float dt=smoothstep(0.16,0.06,d)*(0.25+0.75*tw);
+    col=mix(uBg,uC2,dt*0.7);
+  }
+  col=mix(uBg,col,clamp(0.22+0.55*uInten,0.0,1.0));
+  gl_FragColor=vec4(col,1.0);
+}`
+
+    const sh = (src: string, k: number) => {
+      const s = gl.createShader(k) as WebGLShader
+      gl.shaderSource(s, src)
+      gl.compileShader(s)
+      return s
+    }
+    const prog = gl.createProgram() as WebGLProgram
+    const vs = sh(VERT, gl.VERTEX_SHADER)
+    const fs = sh(FRAG, gl.FRAGMENT_SHADER)
+    gl.attachShader(prog, vs)
+    gl.attachShader(prog, fs)
+    gl.linkProgram(prog)
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      // Shader failed (e.g. no highp): clear to the canvas colour and bail.
+      gl.clearColor(cv[0] / 255, cv[1] / 255, cv[2] / 255, 1)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      return () => {}
+    }
+    gl.useProgram(prog)
+
+    const buf = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
+    const aLoc = gl.getAttribLocation(prog, 'p')
+    gl.enableVertexAttribArray(aLoc)
+    gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
+
+    const u = (name: string) => gl.getUniformLocation(prog, name)
+    gl.uniform1i(u('uKind'), kind)
+    gl.uniform3f(u('uC1'), c1[0] / 255, c1[1] / 255, c1[2] / 255)
+    gl.uniform3f(u('uC2'), c2[0] / 255, c2[1] / 255, c2[2] / 255)
+    gl.uniform3f(u('uC3'), c3[0] / 255, c3[1] / 255, c3[2] / 255)
+    gl.uniform3f(u('uBg'), cv[0] / 255, cv[1] / 255, cv[2] / 255)
+    gl.uniform1f(u('uInten'), inten)
+    const uResL = u('uRes')
+    const uTimeL = u('uTime')
+
+    const glResize = () => {
+      const dpr = Math.min(2, window.devicePixelRatio || 1)
+      const r = canvas.getBoundingClientRect()
+      canvas.width = Math.max(1, Math.floor(r.width * dpr))
+      canvas.height = Math.max(1, Math.floor(r.height * dpr))
+      gl.viewport(0, 0, canvas.width, canvas.height)
+    }
+    glResize()
+
+    let graf = 0
+    let gt = 0
+    let glast = 0
+    const gframe = (now: number) => {
+      graf = requestAnimationFrame(gframe)
+      if (!glast) glast = now
+      const dt = Math.min(0.05, (now - glast) / 1000)
+      glast = now
+      gt += dt * spd
+      gl.uniform2f(uResL, canvas.width, canvas.height)
+      gl.uniform1f(uTimeL, gt)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    }
+    graf = requestAnimationFrame(gframe)
+    const onGlResize = () => glResize()
+    window.addEventListener('resize', onGlResize)
+    return () => {
+      cancelAnimationFrame(graf)
+      window.removeEventListener('resize', onGlResize)
+      gl.deleteProgram(prog)
+      gl.deleteShader(vs)
+      gl.deleteShader(fs)
+      gl.deleteBuffer(buf)
+    }
+  }
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return () => {}
 
   let W = 1
   let H = 1
@@ -140,60 +287,6 @@ export function runBackground(
         ctx.fill()
       }
       ctx.globalCompositeOperation = 'source-over'
-    } else if (type === 'grid') {
-      // Synthwave floor: lines converging to a vanishing point, rows scrolling
-      // toward the viewer with perspective spacing.
-      const horizon = H * 0.52
-      const vpx = W * 0.5
-      ctx.lineWidth = 1
-      ctx.strokeStyle = css(c2, 0.08 + inten * 0.22)
-      const cols = 16
-      for (let i = -cols; i <= cols; i++) {
-        const f = i / cols
-        ctx.beginPath()
-        ctx.moveTo(vpx + f * W * 0.06, horizon)
-        ctx.lineTo(vpx + f * W * 1.4, H)
-        ctx.stroke()
-      }
-      const rows = 14
-      const scroll = (t * 0.25) % 1
-      for (let j = 0; j < rows; j++) {
-        let f = (j + scroll) / rows
-        f = f * f // perspective: rows bunch up near the horizon
-        const y = horizon + f * (H - horizon)
-        ctx.strokeStyle = css(c3, (0.05 + inten * 0.2) * (0.3 + f))
-        ctx.beginPath()
-        ctx.moveTo(0, y)
-        ctx.lineTo(W, y)
-        ctx.stroke()
-      }
-    } else if (type === 'waves') {
-      // Stacked sine ribbons, phase-drifting, breathing in amplitude.
-      const lines = 5
-      ctx.lineWidth = 1.5
-      for (let k = 0; k < lines; k++) {
-        const yBase = H * (0.28 + 0.46 * (k / (lines - 1)))
-        const amp = (10 + inten * 34) * (0.5 + 0.5 * Math.sin(t * 0.3 + k))
-        ctx.strokeStyle = css(k % 2 ? c3 : c2, 0.08 + inten * 0.2)
-        ctx.beginPath()
-        for (let x = 0; x <= W; x += 8) {
-          const y = yBase + Math.sin(x * 0.012 + t * 1.2 + k * 0.8) * amp
-          if (x === 0) ctx.moveTo(x, y)
-          else ctx.lineTo(x, y)
-        }
-        ctx.stroke()
-      }
-    } else if (type === 'noise') {
-      // Faint scanlines + per-frame film grain (CRT / glitch).
-      ctx.fillStyle = css([0, 0, 0], 0.04 + inten * 0.06)
-      for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1)
-      const dots = Math.round(W * H * 0.0006 * (0.3 + inten))
-      for (let i = 0; i < dots; i++) {
-        ctx.globalAlpha = Math.random() * (0.05 + inten * 0.12)
-        ctx.fillStyle = Math.random() < 0.5 ? css(c2, 1) : css(c1, 1)
-        ctx.fillRect(Math.random() * W, Math.random() * H, 1.5, 1.5)
-      }
-      ctx.globalAlpha = 1
     }
   }
   raf = requestAnimationFrame(frame)

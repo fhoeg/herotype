@@ -25,7 +25,7 @@ export const moodMap: MoodBucket[] = [
     palette: 'cyber',
     speed: 1.3,
     taglines: ['system online', 'access granted', 'no signal', 'enter the grid'],
-    background: 'noise',
+    background: 'chrome',
   },
   {
     keys: ['neon', 'retro', '80s', 'synth', 'vapor', 'arcade', 'miami', 'outrun'],
@@ -33,7 +33,7 @@ export const moodMap: MoodBucket[] = [
     palette: 'neon',
     speed: 1,
     taglines: ['after dark', 'press start', 'night drive', 'high score'],
-    background: 'grid',
+    background: 'mesh',
   },
   {
     keys: ['playful', 'bouncy', 'fun', 'joy', 'happy', 'toy', 'kids', 'party', 'energetic'],
@@ -57,7 +57,7 @@ export const moodMap: MoodBucket[] = [
     palette: 'ink',
     speed: 0.9,
     taglines: ['go with the flow', 'easy does it', 'drift in', 'stay fluid'],
-    background: 'waves',
+    background: 'plasma',
   },
   {
     keys: ['bold', 'loud', 'impact', 'strong', 'power', 'sport', 'headline', 'shout', 'max'],
