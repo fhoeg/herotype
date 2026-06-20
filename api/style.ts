@@ -22,7 +22,7 @@ const EFFECT_KEYS = ['rise', 'kinetic', 'wave', 'glitch', 'neon', 'drop', 'draw'
 // Background keys — mirror BG_KEYS in src/lib/background.ts (KEEP IN SYNC).
 const BG_KEYS = [
   'none', 'aurora', 'particles',
-  'plasma', 'mesh', 'chrome', 'dots',
+  'plasma', 'mesh', 'chrome', 'dots', 'smoke',
 ] as const
 // 'Fraunces' = the app default; rest mirror googleFonts in src/lib/fonts.ts
 // (KEEP IN SYNC). All exist on @fontsource as google type with a latin-400 woff.
@@ -222,6 +222,7 @@ mood (pick one): ${BG_KEYS.join(', ')}.
   mesh = soft drifting gradient mesh (modern, premium, dreamy, fluid);
   chrome = flowing liquid-metal surface (futuristic, sleek, Y2K, hypebeast);
   dots = fine twinkling dot grid (techy, minimal, clean, data);
+  smoke = a billowing turbulent smoke ring with a dark centre (mysterious, moody, ethereal, ominous);
   none = a flat solid canvas (stark, brutalist, ultra-minimal).
 bgIntensity: 0–1 density/opacity. Keep it subtle so the headline stays the
 hero — 0.3–0.6 suits most moods; go higher only for deliberately lush vibes.

@@ -26,12 +26,13 @@ export const backgrounds: { key: string; name: string; desc: string }[] = [
   { key: 'mesh', name: 'Mesh', desc: 'gradient flow' },
   { key: 'chrome', name: 'Chrome', desc: 'iridescent metal' },
   { key: 'dots', name: 'Dot field', desc: 'twinkling grid' },
+  { key: 'smoke', name: 'Smoke ring', desc: 'billowing vortex' },
 ]
 
 /** Kinds rendered with WebGL (vs Canvas 2D). The canvas element must be
  *  remounted when crossing this boundary — a canvas is locked to one context
  *  type for its lifetime. */
-export const GL_BG_KEYS = ['plasma', 'mesh', 'chrome', 'dots']
+export const GL_BG_KEYS = ['plasma', 'mesh', 'chrome', 'dots', 'smoke']
 
 export const BG_KEYS = backgrounds.map((b) => b.key)
 
@@ -76,11 +77,14 @@ export function runBackground(
   // Self-contained: one full-screen triangle + a fragment shader that branches
   // on the kind. Themed by palette uniforms; `inten` keeps it muted so the
   // headline stays readable. Falls back to a flat fill if WebGL is unavailable.
-  if (type === 'plasma' || type === 'mesh' || type === 'chrome' || type === 'dots') {
+  if (
+    type === 'plasma' || type === 'mesh' || type === 'chrome' || type === 'dots' || type === 'smoke'
+  ) {
     const gl = (canvas.getContext('webgl', { antialias: true, alpha: false }) ||
       canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null
     if (!gl) return () => {}
-    const kind = type === 'plasma' ? 0 : type === 'mesh' ? 1 : type === 'chrome' ? 2 : 3
+    const kind =
+      type === 'plasma' ? 0 : type === 'mesh' ? 1 : type === 'chrome' ? 2 : type === 'dots' ? 3 : 4
 
     const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}'
     const FRAG = `precision highp float;
@@ -125,12 +129,23 @@ void main(){
     metal=mix(metal,iris(refl*1.2+tm*0.05),(1.0-nrm.z)*0.3);
     metal*=mix(vec3(1.0),clamp(uC3*2.0,0.0,1.0),0.12);
     col=metal;
-  }else{
+  }else if(uKind==3){
     vec2 sc=vec2(uRes.x/uRes.y,1.0)*42.0;
     vec2 gp=fract(uv*sc)-0.5;float d=length(gp);
     float tw=0.5+0.5*sin(tm*1.8+hash(floor(uv*sc))*40.0);
     float dt=smoothstep(0.16,0.06,d)*(0.25+0.75*tw);
     col=mix(uBg,uC2,dt*0.7);
+  }else{
+    float r=length(p);
+    vec2 sp=p*3.0;
+    float warp=fbm(sp+vec2(tm*0.06,-tm*0.05));
+    float tex=fbm(sp*1.7+vec2(-tm*0.04,tm*0.05)+warp);
+    float rr=r+(warp-0.5)*0.22;
+    float ring=smoothstep(0.28,0.0,abs(rr-0.40));
+    ring*=smoothstep(0.05,0.26,r);
+    float dens=clamp(ring*(0.25+0.95*tex),0.0,1.0);
+    dens=pow(dens,1.25);
+    col=mix(uBg,uC1,dens);
   }
   col=mix(uBg,col,clamp(0.22+0.55*uInten,0.0,1.0));
   gl_FragColor=vec4(col,1.0);
