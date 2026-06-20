@@ -14,6 +14,8 @@ type MoodBucket = {
   palette: string
   speed: number
   taglines: string[]
+  /** Mood-underpinning background (see lib/background.ts). */
+  background: string
 }
 
 export const moodMap: MoodBucket[] = [
@@ -23,6 +25,7 @@ export const moodMap: MoodBucket[] = [
     palette: 'cyber',
     speed: 1.3,
     taglines: ['system online', 'access granted', 'no signal', 'enter the grid'],
+    background: 'noise',
   },
   {
     keys: ['neon', 'retro', '80s', 'synth', 'vapor', 'arcade', 'miami', 'outrun'],
@@ -30,6 +33,7 @@ export const moodMap: MoodBucket[] = [
     palette: 'neon',
     speed: 1,
     taglines: ['after dark', 'press start', 'night drive', 'high score'],
+    background: 'grid',
   },
   {
     keys: ['playful', 'bouncy', 'fun', 'joy', 'happy', 'toy', 'kids', 'party', 'energetic'],
@@ -37,6 +41,7 @@ export const moodMap: MoodBucket[] = [
     palette: 'ember',
     speed: 1.1,
     taglines: ['let’s play', 'good times', 'bounce in', 'say hi'],
+    background: 'particles',
   },
   {
     keys: ['elegant', 'luxury', 'refined', 'editorial', 'classy', 'premium', 'minimal', 'calm', 'sophisticated'],
@@ -44,6 +49,7 @@ export const moodMap: MoodBucket[] = [
     palette: 'cream',
     speed: 0.85,
     taglines: ['est. 2026', 'quietly crafted', 'in good taste', 'the fine print'],
+    background: 'aurora',
   },
   {
     keys: ['liquid', 'smooth', 'organic', 'flow', 'wave', 'water', 'soft', 'dream', 'ambient'],
@@ -51,6 +57,7 @@ export const moodMap: MoodBucket[] = [
     palette: 'ink',
     speed: 0.9,
     taglines: ['go with the flow', 'easy does it', 'drift in', 'stay fluid'],
+    background: 'waves',
   },
   {
     keys: ['bold', 'loud', 'impact', 'strong', 'power', 'sport', 'headline', 'shout', 'max'],
@@ -58,6 +65,7 @@ export const moodMap: MoodBucket[] = [
     palette: 'ember',
     speed: 1.2,
     taglines: ['no small talk', 'go big', 'full send', 'make noise'],
+    background: 'particles',
   },
 ]
 
@@ -90,5 +98,6 @@ export function parseMood(raw: string): MoodResult {
     palette: hit.palette,
     speed: hit.speed,
     tagline: pick(hit.taglines),
+    background: hit.background,
   }
 }

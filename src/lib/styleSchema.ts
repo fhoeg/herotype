@@ -14,6 +14,10 @@ export type StyleResult = {
   weight: number
   colors: { canvas: string; c1: string; c2: string; c3: string }
   speed: number
+  /** Animated mood background key (see lib/background.ts). */
+  background: string
+  /** Background density / opacity, 0–1. */
+  bgIntensity: number
   headline: string
   tagline: string
   reasoning: string

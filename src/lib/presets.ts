@@ -90,25 +90,60 @@ export const presets: Record<string, Preset> = {
     tracking: '0em',
     build: (units, p) => {
       const tl = gsap.timeline()
+      // Subtle, randomly-ordered entrance — a few px + a little skew, both axes.
       tl.from(units, {
         opacity: 0,
-        x: () => gsap.utils.random(-40, 40),
-        skewX: 30,
-        duration: 0.4 / p.speed,
-        ease: 'power4.out',
-        stagger: p.stagger * 0.6,
+        x: () => gsap.utils.random(-8, 8),
+        y: () => gsap.utils.random(-6, 6),
+        skewX: 10,
+        duration: 0.45 / p.speed,
+        ease: 'power3.out',
+        stagger: { each: p.stagger, from: 'random' },
       })
+      // Faint constant chromatic aberration; full glyphs to start.
+      gsap.set(units, {
+        clipPath: 'inset(0% 0% 0% 0%)',
+        textShadow: '1px 0 var(--c2), -1px 0 var(--c3)',
+      })
+      // "Broken rendering": each glyph runs on its OWN randomised, sparse clock,
+      // so the breakup is staggered across the word. Two independent layers —
+      // (1) a constant 1–2px micro-jitter, and (2) an occasional hard "slice"
+      // that cuts a horizontal band out of the glyph (+ skew + stronger split)
+      // and snaps back, like a frame that failed to render.
       units.forEach((u) => {
         gsap.to(u, {
-          x: () => gsap.utils.random(-3, 3),
-          textShadow: '2px 0 var(--c2), -2px 0 var(--c3)',
-          duration: 0.08,
+          x: () => gsap.utils.random(-1.5, 1.5),
+          y: () => gsap.utils.random(-1, 1),
+          duration: 0.1,
+          delay: gsap.utils.random(0.5, 1.6),
           repeat: -1,
           repeatRefresh: true,
-          repeatDelay: gsap.utils.random(0.4, 2.4),
+          repeatDelay: gsap.utils.random(0.4, 1.8),
           yoyo: true,
           ease: 'none',
         })
+        gsap
+          .timeline({
+            repeat: -1,
+            repeatRefresh: true,
+            delay: gsap.utils.random(0.8, 2.6),
+            repeatDelay: gsap.utils.random(1.6, 4.8),
+          })
+          .set(u, {
+            clipPath: () =>
+              `inset(${gsap.utils.random(0, 55)}% 0% ${gsap.utils.random(0, 35)}% 0%)`,
+            skewX: () => gsap.utils.random(-8, 8),
+            textShadow: '2px 0 var(--c2), -2px 0 var(--c3)',
+          })
+          .set(
+            u,
+            {
+              clipPath: 'inset(0% 0% 0% 0%)',
+              skewX: 0,
+              textShadow: '1px 0 var(--c2), -1px 0 var(--c3)',
+            },
+            '+=0.09',
+          )
       })
       return tl
     },

@@ -5,6 +5,7 @@ import { useGSAP } from '@gsap/react'
 import { presets } from '../lib/presets'
 import { DEFAULT_FONT } from '../lib/fonts'
 import { fontFileUrl, BUNDLED_FALLBACK } from '../lib/fontFiles'
+import { runBackground } from '../lib/background'
 import type { HeroState } from '../lib/types'
 
 gsap.registerPlugin(useGSAP)
@@ -27,6 +28,29 @@ function applyColors(c: HeroState['colors']) {
   root.setProperty('--c1', c.c1)
   root.setProperty('--c2', c.c2)
   root.setProperty('--c3', c.c3)
+}
+
+/**
+ * Subtle animated mood backdrop, painted behind the headline. Re-inits whenever
+ * the chosen background, the palette, or its tuning changes; the rAF loop owns
+ * its own cleanup so switching backgrounds never stacks loops.
+ */
+function BackgroundCanvas({ state }: { state: HeroState }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const cv = ref.current
+    if (!cv) return
+    return runBackground(cv, state.background, state.colors, state.bgIntensity, state.bgSpeed)
+  }, [
+    state.background,
+    state.colors.canvas,
+    state.colors.c1,
+    state.colors.c2,
+    state.colors.c3,
+    state.bgIntensity,
+    state.bgSpeed,
+  ])
+  return <canvas ref={ref} className="bg-canvas" aria-hidden="true" />
 }
 
 /**
@@ -109,7 +133,8 @@ function SpansStage({ state, runId }: Props) {
   const words = state.headline.split(' ')
 
   return (
-    <div className="canvas">
+    <div className={`canvas${state.preset === 'glitch' ? ' crt' : ''}`}>
+      <BackgroundCanvas state={state} />
       <div
         className="hero"
         ref={scope}
@@ -291,7 +316,8 @@ function DrawStage({ state, runId }: Props) {
   )
 
   return (
-    <div className="canvas">
+    <div className={`canvas${state.preset === 'glitch' ? ' crt' : ''}`}>
+      <BackgroundCanvas state={state} />
       <div
         className="hero"
         ref={scope}

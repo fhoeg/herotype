@@ -6,6 +6,7 @@ import { palettes } from './lib/palettes'
 import { parseMood } from './lib/mood'
 import { buildExport } from './lib/exportHtml'
 import { loadGoogleFont, fetchFontWeights, DEFAULT_FONT } from './lib/fonts'
+import { isBgKey } from './lib/background'
 import type { HeroState } from './lib/types'
 import type { StyleResult } from './lib/styleSchema'
 
@@ -41,6 +42,9 @@ const INITIAL: HeroState = {
   headlineScale: 1,
   taglineScale: 1,
   align: 'center',
+  background: 'aurora',
+  bgIntensity: 0.45,
+  bgSpeed: 1,
 }
 
 export default function App() {
@@ -102,6 +106,7 @@ export default function App() {
       colors: { ...palettes[r.palette] },
       speed: r.speed,
       tagline: r.tagline,
+      background: r.background,
     }))
     setLastMood({ effectName: presets[r.preset].name, tagline: r.tagline, ai: false })
     replay()
@@ -133,6 +138,8 @@ export default function App() {
         c3: safeHex(d.colors.c3, INITIAL.colors.c3),
       },
       speed: Math.min(2.2, Math.max(0.4, d.speed)),
+      background: isBgKey(d.background) ? d.background : INITIAL.background,
+      bgIntensity: Math.min(1, Math.max(0, typeof d.bgIntensity === 'number' ? d.bgIntensity : INITIAL.bgIntensity)),
     })
     setLastMood({
       effectName: presets[d.effect].name,
@@ -222,6 +229,9 @@ export default function App() {
         setScale={(scale) => patch({ scale })}
         setHeadlineScale={(headlineScale) => patch({ headlineScale })}
         setTaglineScale={(taglineScale) => patch({ taglineScale })}
+        setBackground={(background) => patch({ background })}
+        setBgIntensity={(bgIntensity) => patch({ bgIntensity })}
+        setBgSpeed={(bgSpeed) => patch({ bgSpeed })}
       />
     </div>
   )

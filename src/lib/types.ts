@@ -53,6 +53,8 @@ export type MoodResult = {
   palette: string
   speed: number
   tagline: string
+  /** Mood-underpinning animated background key (see lib/background.ts). */
+  background: string
 }
 
 /** The full controllable state of the hero. */
@@ -82,4 +84,10 @@ export type HeroState = {
   taglineScale: number
   /** Text alignment of the headline + sub line. */
   align: 'left' | 'center' | 'right'
+  /** Animated mood background key (see lib/background.ts); 'none' = flat canvas. */
+  background: string
+  /** Background density / opacity, 0 (barely there) → 1 (lush). */
+  bgIntensity: number
+  /** Background motion speed multiplier, independent of the text timing. */
+  bgSpeed: number
 }

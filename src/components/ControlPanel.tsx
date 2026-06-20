@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { presets } from '../lib/presets'
 import { palettes } from '../lib/palettes'
+import { backgrounds } from '../lib/background'
 import { googleFonts, loadGoogleFont } from '../lib/fonts'
 import { moodChips } from '../lib/mood'
 import type { HeroState } from '../lib/types'
@@ -29,6 +30,9 @@ type Props = {
   setScale: (v: number) => void
   setHeadlineScale: (v: number) => void
   setTaglineScale: (v: number) => void
+  setBackground: (key: string) => void
+  setBgIntensity: (v: number) => void
+  setBgSpeed: (v: number) => void
   /** True while the AI style request is in flight. */
   generating: boolean
   /** Last mood that was generated, for the live hint line. */
@@ -59,6 +63,9 @@ export function ControlPanel({
   setScale,
   setHeadlineScale,
   setTaglineScale,
+  setBackground,
+  setBgIntensity,
+  setBgSpeed,
   generating,
   lastMood,
 }: Props) {
@@ -271,6 +278,60 @@ export function ControlPanel({
                 </button>
               </div>
             </div>
+          )}
+        </div>
+      </details>
+
+      <details className="group">
+        <summary data-testid="group-background">
+          <span>Background</span>
+        </summary>
+        <div className="group-body">
+          <div className="presets" data-testid="bg-types">
+            {backgrounds.map((b) => (
+              <button
+                key={b.key}
+                className={`bg-card${state.background === b.key ? ' active' : ''}`}
+                data-bg={b.key}
+                onClick={() => setBackground(b.key)}
+              >
+                <div className="pname">{b.name}</div>
+                <div className="pdesc">{b.desc}</div>
+              </button>
+            ))}
+          </div>
+
+          {state.background !== 'none' && (
+            <>
+              <div className="slider">
+                <label>
+                  Intensity <b data-testid="bg-intensity-val">{Math.round(state.bgIntensity * 100)}%</b>
+                </label>
+                <input
+                  type="range"
+                  data-testid="bg-intensity"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={Math.round(state.bgIntensity * 100)}
+                  onChange={(e) => setBgIntensity(+e.target.value / 100)}
+                />
+              </div>
+              <div className="slider">
+                <label>
+                  Motion <b data-testid="bg-speed-val">{state.bgSpeed.toFixed(1)}×</b>
+                </label>
+                <input
+                  type="range"
+                  data-testid="bg-speed"
+                  min={0.2}
+                  max={2.5}
+                  step={0.1}
+                  value={state.bgSpeed}
+                  onChange={(e) => setBgSpeed(+e.target.value)}
+                />
+              </div>
+            </>
           )}
         </div>
       </details>
