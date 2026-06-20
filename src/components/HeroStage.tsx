@@ -144,7 +144,11 @@ function SpansStage({ state, runId }: Props) {
             </Fragment>
           ))}
         </h1>
-        <div className="tag" data-testid="tagline">
+        <div
+          className="tag"
+          data-testid="tagline"
+          style={state.taglineFont ? { fontFamily: `"${state.taglineFont}", sans-serif` } : undefined}
+        >
           {state.tagline}
         </div>
       </div>
@@ -325,7 +329,11 @@ function DrawStage({ state, runId }: Props) {
             )}
           </svg>
         )}
-        <div className="tag" data-testid="tagline">
+        <div
+          className="tag"
+          data-testid="tagline"
+          style={state.taglineFont ? { fontFamily: `"${state.taglineFont}", sans-serif` } : undefined}
+        >
           {state.tagline}
         </div>
       </div>

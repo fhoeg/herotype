@@ -116,6 +116,9 @@ const hex = z.string().describe('CSS hex colour, e.g. #0a0a0c')
 const styleSchema = z.object({
   effect: z.enum(EFFECT_KEYS).describe('Animation preset that best fits the vibe'),
   font: z.enum(FONT_OPTIONS).describe('Headline typeface'),
+  subFont: z
+    .enum(FONT_OPTIONS)
+    .describe('Small sub-line typeface that PAIRS WELL with the headline font (a classic type pairing — often a clean complement, sometimes the same family)'),
   weight: z.number().describe('Headline font weight, 100–900 (heavier = louder)'),
   colors: z
     .object({ canvas: hex, c1: hex, c2: hex, c3: hex })
@@ -141,9 +144,11 @@ const SYSTEM = `You are an art director for an animated typographic website hero
 Given a short style/mood phrase, choose the combination that best expresses it.
 
 Effects (pick one): ${EFFECT_KEYS.join(', ')}
-Fonts (pick one): ${FONT_OPTIONS.join(', ')}
+Fonts for the headline (font) and sub line (subFont), pick from: ${FONT_OPTIONS.join(', ')}
 - glitch pairs well with mono/techy faces; rise/wave with editorial serifs;
   drop/kinetic with heavy display faces; draw renders stroked outlines.
+- subFont is the small sub-line face: choose a tasteful pairing with the
+  headline font (e.g. a clean sans under a display serif), not a clashing one.
 
 Colours: return a CUSTOM hex set tuned to the vibe — do not just copy a palette.
 canvas = background, c1 = headline (must read clearly on the canvas),

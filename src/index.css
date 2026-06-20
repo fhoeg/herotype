@@ -364,6 +364,48 @@ body {
 .ai-field .chips {
   margin-top: 10px;
 }
+/* Collapsible adjustment groups (font / effect / tuning / color). */
+.group {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+.group > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 14px 16px;
+  user-select: none;
+}
+.group > summary::-webkit-details-marker {
+  display: none;
+}
+.group > summary::after {
+  content: '+';
+  font-size: 15px;
+  line-height: 1;
+  color: var(--muted);
+}
+.group[open] > summary::after {
+  content: '−';
+}
+.group > summary:hover {
+  color: var(--ink);
+}
+.group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0 16px 16px;
+}
+
 /* Section label separating the primary action from the adjustments below. */
 .panel-divider {
   display: flex;

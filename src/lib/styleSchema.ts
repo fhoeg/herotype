@@ -9,6 +9,8 @@
 export type StyleResult = {
   effect: string
   font: string
+  /** Sub-line font, chosen by the AI to pair with the headline font. */
+  subFont: string
   weight: number
   colors: { canvas: string; c1: string; c2: string; c3: string }
   speed: number

@@ -30,6 +30,15 @@ async function gotoApp(page: Page) {
 /** Count of char units (excludes the inter-word .space units). */
 const charUnits = (page: Page) => page.locator('.u:not(.space)')
 
+/** Expand a collapsed Adjust group so its controls are interactable. Idempotent. */
+async function openGroup(page: Page, name: 'font' | 'effect' | 'tuning' | 'color') {
+  const summary = page.getByTestId(`group-${name}`)
+  const open = await summary.evaluate(
+    (el) => (el.closest('details') as HTMLDetailsElement | null)?.open ?? false,
+  )
+  if (!open) await summary.click()
+}
+
 const NEON_TAGLINES = ['after dark', 'press start', 'night drive', 'high score']
 
 // ---------------------------------------------------------------------------
@@ -73,6 +82,7 @@ test('V3 — Generate (AI) applies effect + colours + tagline, with fallback', a
         weight: 700,
         colors: { canvas: '#0c0414', c1: '#fef0ff', c2: '#ff3df2', c3: '#3df2ff' },
         speed: 1,
+        subFont: 'Playfair Display',
         headline: '**NEON DREAMS**', // markdown must be stripped client-side
         tagline: 'after dark',
         reasoning: '**retro** synth glow',
@@ -80,6 +90,7 @@ test('V3 — Generate (AI) applies effect + colours + tagline, with fallback', a
     }),
   )
   await gotoApp(page)
+  await openGroup(page, 'tuning')
 
   // Tweak a setting first — a new style description must reset it to default.
   await page.getByTestId('scale').focus()
@@ -96,6 +107,9 @@ test('V3 — Generate (AI) applies effect + colours + tagline, with fallback', a
   const taglineAfter = await page.getByTestId('tagline').textContent()
   expect(taglineAfter).not.toBe(taglineBefore)
   expect(taglineAfter?.trim()).toBe('after dark')
+
+  // AI also picks a matching sub-line font
+  await expect(page.getByTestId('tagline')).toHaveCSS('font-family', /Playfair Display/)
 
   const c2 = await page.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue('--c2').trim(),
@@ -144,6 +158,7 @@ test('V6 — copy writes a snippet of the current state and confirms', async ({ 
 // ---------------------------------------------------------------------------
 test('V2 — each preset activates and does not stack', async ({ page, errors }) => {
   await gotoApp(page)
+  await openGroup(page, 'effect')
 
   for (const key of ['rise', 'kinetic', 'wave', 'glitch', 'neon', 'drop']) {
     await page.locator(`.preset[data-preset="${key}"]`).click()
@@ -162,6 +177,8 @@ test('V2 — each preset activates and does not stack', async ({ page, errors })
 // Font is independent of the effect: switching presets must NOT change the typeface.
 test('Font does not change when the effect changes', async ({ page, errors }) => {
   await gotoApp(page)
+  await openGroup(page, 'font')
+  await openGroup(page, 'effect')
   const familyOf = () =>
     page.getByTestId('headline').evaluate((el) => getComputedStyle(el).fontFamily)
 
@@ -193,6 +210,7 @@ test('V4 — replay re-runs without reload or leftover tweens', async ({ page, e
 // ---------------------------------------------------------------------------
 test('V5 — speed / stagger / scale visibly change with tracking readouts', async ({ page, errors }) => {
   await gotoApp(page)
+  await openGroup(page, 'tuning')
 
   // speed 1.0 → 1.8 (8 × +0.1 steps)
   await page.getByTestId('speed').focus()
@@ -243,6 +261,8 @@ test('F1–F6 — font override applies, reverts, loads on demand, exports, stic
   errors,
 }) => {
   await gotoApp(page)
+  await openGroup(page, 'font')
+  await openGroup(page, 'effect') // F6 switches presets
   const select = page.getByTestId('font-select')
 
   // F1 — default value renders the app default font (Fraunces), preset-independent
@@ -288,6 +308,31 @@ test('F1–F6 — font override applies, reverts, loads on demand, exports, stic
   expect(errors.filter((e) => !e.includes('Failed to load resource'))).toEqual([])
 })
 
+// Sub-line font is adjustable, independent of the headline, and exported.
+test('Sub line font is selectable, independent, and carried into the export', async ({
+  page,
+  errors,
+}) => {
+  await gotoApp(page)
+  await openGroup(page, 'font')
+
+  const tagSelect = page.getByTestId('tagline-font-select')
+  await expect(tagSelect).toHaveValue('') // default
+  await expect(page.getByTestId('tagline')).toHaveCSS('font-family', /Space Mono/)
+
+  // pick a distinct face → the rendered sub line follows it, headline unchanged
+  await tagSelect.selectOption('Lobster')
+  await expect(page.getByTestId('tagline')).toHaveCSS('font-family', /Lobster/)
+  expect(await fontFamilyOf(page)).toContain('Fraunces')
+
+  // fetched on demand + carried into the export
+  await expect(page.locator('head link[href*="Lobster"]')).toHaveCount(1)
+  await page.getByTestId('copy').click()
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('Lobster')
+
+  expect(errors).toEqual([])
+})
+
 // ---------------------------------------------------------------------------
 // C1–C6 — selectable colors
 // ---------------------------------------------------------------------------
@@ -307,6 +352,8 @@ test('C1–C6 — colors are selectable, seed from palettes, go custom, and expo
   errors,
 }) => {
   await gotoApp(page)
+  await openGroup(page, 'color')
+  await openGroup(page, 'effect')
 
   // C1 — four colour inputs present with hex values
   for (const id of ['font-color', 'effect-color-1', 'effect-color-2', 'bg-color']) {
@@ -358,6 +405,9 @@ test('D1–D6 — Draw renders SVG outlines, follows the font, toggles fill, the
   errors,
 }) => {
   await gotoApp(page)
+  await openGroup(page, 'effect')
+  await openGroup(page, 'color')
+  await openGroup(page, 'font') // D2 switches the headline font
 
   // D1 — selecting Draw renders an SVG outline layer (not the .u spans)
   await page.locator('.preset[data-preset="draw"]').click()
@@ -438,6 +488,7 @@ test('Sub line is editable and alignment switches left/center/right', async ({ p
 // ---------------------------------------------------------------------------
 test('Weight selector overrides the preset font-weight and reverts', async ({ page, errors }) => {
   await gotoApp(page)
+  await openGroup(page, 'font')
 
   const weightOf = () =>
     page.getByTestId('headline').evaluate((el) => getComputedStyle(el).fontWeight)
@@ -462,6 +513,7 @@ test('Weight selector overrides the preset font-weight and reverts', async ({ pa
 // ---------------------------------------------------------------------------
 test('Copy code exports a self-contained, runnable hero', async ({ page, errors }) => {
   await gotoApp(page)
+  await openGroup(page, 'effect')
   await page.locator('.preset[data-preset="glitch"]').click()
   await page.getByTestId('copy').click()
   const html = await page.evaluate(() => navigator.clipboard.readText())

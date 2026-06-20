@@ -30,6 +30,7 @@ const INITIAL: HeroState = {
   tagline: 'static is boring',
   preset: 'rise',
   font: '',
+  taglineFont: '',
   weight: 0,
   palette: 'ember',
   colors: { ...palettes.ember },
@@ -80,6 +81,11 @@ export default function App() {
     }
   }, [state.font])
 
+  // Lazily load the chosen sub-line font (no-op for the default Space Mono).
+  useEffect(() => {
+    loadGoogleFont(state.taglineFont)
+  }, [state.taglineFont])
+
   const patch = (next: Partial<HeroState>) => setState((s) => ({ ...s, ...next }))
   const replay = () => setRunId((n) => n + 1)
 
@@ -117,6 +123,7 @@ export default function App() {
       tagline,
       preset: d.effect,
       font,
+      taglineFont: typeof d.subFont === 'string' ? d.subFont : '',
       weight,
       palette: '', // diverged from any preset palette → "Custom"
       colors: {
@@ -195,6 +202,7 @@ export default function App() {
           replay()
         }}
         setFont={(font) => patch({ font })}
+        setTaglineFont={(taglineFont) => patch({ taglineFont })}
         setWeight={(weight) => patch({ weight })}
         setDrawFill={(drawFill) => patch({ drawFill })}
         setPalette={(palette) => {

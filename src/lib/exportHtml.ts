@@ -29,13 +29,20 @@ function splitMarkup(text: string): string {
     .join('')
 }
 
-/** Google Fonts stylesheet for the headline face + the Space Mono sub line.
- *  Only the face's real `weights` are requested — requesting a weight a font
- *  lacks 400s the whole css2 query. */
-function fontsHref(font: string, weights: number[]): string {
-  const fam = (font || DEFAULT_FONT).replace(/ /g, '+')
+/** Google Fonts stylesheet for the headline face + the Space Mono sub line,
+ *  plus a chosen sub-line face. Only the headline's real `weights` are requested
+ *  (requesting a weight a font lacks 400s the whole css2 query); the sub-line
+ *  face is requested at weight 400 only, which every face has. */
+function fontsHref(font: string, weights: number[], taglineFont: string): string {
+  const head = font || DEFAULT_FONT
+  const fam = head.replace(/ /g, '+')
   const ws = (weights.length ? weights : [400]).join(';')
-  return `https://fonts.googleapis.com/css2?family=${fam}:wght@${ws}&family=Space+Mono:wght@400;700&display=swap`
+  let href = `https://fonts.googleapis.com/css2?family=${fam}:wght@${ws}&family=Space+Mono:wght@400;700`
+  // Add the sub-line face unless it's already loaded (Space Mono or the headline).
+  if (taglineFont && taglineFont !== 'Space Mono' && taglineFont !== head) {
+    href += `&family=${taglineFont.replace(/ /g, '+')}:wght@400`
+  }
+  return href + '&display=swap'
 }
 
 /** The GSAP "in" timeline for each span-based preset, with params baked in. */
@@ -64,6 +71,7 @@ function timelineJs(key: string, speed: number, stagger: number): string {
 
 function sharedCss(state: HeroState, fontFamily: string, weight: number, tracking: string): string {
   const c = state.colors
+  const tagFont = state.taglineFont ? `"${state.taglineFont}", sans-serif` : '"Space Mono", monospace'
   return `  .herotype{
     --c1:${c.c1}; --c2:${c.c2}; --c3:${c.c3}; --canvas:${c.canvas};
     background:var(--canvas); color:var(--c1);
@@ -78,7 +86,7 @@ function sharedCss(state: HeroState, fontFamily: string, weight: number, trackin
     font-size:calc(clamp(2.6rem,9vw,8.5rem) * ${n(state.headlineScale)}); color:var(--c1); text-wrap:balance;
   }
   .herotype .ht-tag{
-    margin:1.4rem 0 0; font-family:"Space Mono",monospace;
+    margin:1.4rem 0 0; font-family:${tagFont};
     font-size:calc(clamp(.7rem,1.3vw,.95rem) * ${n(state.taglineScale)}); letter-spacing:.28em;
     text-transform:uppercase; color:var(--c2);
   }
@@ -99,7 +107,7 @@ function shell(state: HeroState, weights: number[], head: string, body: string):
 <!-- HEROTYPE export · ${def.name} · ${state.palette || 'custom'} palette -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="${fontsHref(state.font, weights)}" rel="stylesheet">
+<link href="${fontsHref(state.font, weights, state.taglineFont)}" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 ${head}</head>
 <body>

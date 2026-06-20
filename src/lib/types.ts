@@ -62,6 +62,8 @@ export type HeroState = {
   preset: string
   /** Google Font override; '' = use the active preset's own font. */
   font: string
+  /** Sub-line (tagline) font; '' = the default Space Mono. A family name otherwise. */
+  taglineFont: string
   /** Font-weight override; 0 = use the active preset's own weight. */
   weight: number
   /** Active palette key for the swatch highlight; '' once a colour is tweaked ("Custom"). */
